@@ -1,0 +1,105 @@
+{
+    "_target": [
+      {
+        "host": "igw1",
+        "iqn": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.1a2b6ae09141"
+      },
+      {
+        "host": "igw2",
+        "iqn": "iqn.2003-01.org.linux-iscsi.igw2.x86:sn.b611a553e579"
+      }
+    ],
+    "pools": [
+        {
+            "pool": "rbd",
+            "gateways": [
+                {
+                    "host": "igw1", 
+                    "images": [
+                        {
+                            "image": "city",
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                        }
+                    ],
+                    "portals": [
+                        {
+                            "portal": "172.16.1.16"
+                        }, 
+                        {
+                            "portal": "172.16.2.16"
+                        }
+                    ]
+                }, 
+                {
+                    "host": "igw2", 
+                    "images": [
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20", 
+                            "image": "writers"
+                        }, 
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                            "image": "writers"
+                        }, 
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                            "image": "wood"
+                        }
+                    ], 
+                    "portals": [
+                        {
+                            "portal": "172.16.1.17"
+                        }, 
+                        {
+                            "portal": "172.16.2.17"
+                        }
+                    ]
+                }
+            ] 
+        },
+        {
+            "pool": "car",
+            "gateways": [
+                {
+                    "host": "igw1", 
+                    "images": [
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                            "image": "cement"
+                        }
+                    ],
+                    "portals": [
+                        {
+                            "portal": "172.16.1.16"
+                        }, 
+                        {
+                            "portal": "172.16.2.16"
+                        }
+                    ]
+                } 
+            ] 
+        },
+        {
+            "pool": "whirl",
+            "gateways": [
+                {
+                    "host": "igw2", 
+                    "images": [
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                            "image": "mental"
+                        }
+                    ],
+                    "portals": [
+                        {
+                            "portal": "172.16.1.17"
+                        }, 
+                        {
+                            "portal": "172.16.2.17"
+                        }
+                    ]
+                } 
+            ] 
+        }
+    ]
+}

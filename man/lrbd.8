@@ -1,0 +1,123 @@
+.TH lrbd 8 
+.SH NAME
+lrbd \- configures iSCSI access to Ceph rbd images
+.SH SYNOPSIS
+.B lrbd [OPTION] 
+.B ...
+.SH DESCRIPTION
+.B lrbd
+without any options will read the configuration from Ceph and 
+apply the changes to the host.  The configuration is detailed 
+in
+.BR lrbd.conf (5).
+Changes are executed via 
+.BR targetcli (8).
+
+The options are as follows:
+.SH OPTIONS
+.PP 
+\-e, \-\-edit
+.RS 4
+edit the global configuration.  If the EDITOR environment variable is set, uses the specified editor.
+.RE
+.PP 
+\-E EDITOR, \-\-edit EDITOR
+.RS 4
+edit the global configuration with the program specified.
+.RE
+.PP 
+\-c CONFIG, \-\-config CONFIG
+.RS 4
+set the configuration object name in Ceph to CONFIG.  The default is 
+.IR lrbd.conf 
+.RE
+.PP
+\-\-ceph CEPH
+.RS 4
+set the Ceph configuration file.  The default is /etc/ceph/ceph.conf.
+.RE
+.PP
+\-H HOST, \-\-host HOST
+.RS 4
+specify the hostname which defaults to gethostname(). 
+.RE
+.PP
+\-f INPUT, \-\-file INPUT
+.RS 4
+import the configuration from a file
+.RE
+.PP
+\-o, \-\-output
+.RS 4
+display the global configuration
+.RE
+.PP
+\-l, \-\-local
+.RS 4
+display the host configuration
+.RE
+.PP
+\-u, \-\-umount
+.RS 4
+unmount the rbd images.  Images in use will fail to unmount.
+.RE
+.PP
+\-W, \-\-wipe
+.RS 4
+remove all configuration objects from all pools.  Use with care.
+.RE
+.PP
+\-C, \-\-clear
+.RS 4
+remove the current targetcli configuration from the host.
+.RE
+.PP
+Some options may be combined, such as \-Cu to first clear the configuration and then unmount the images.  
+.RE
+.SH EXAMPLES
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+Customize a sample configuration and import.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ cp /usr/share/doc/packages/lrbd/samples/tpg.json /tmp
+$ vi /tmp/tpg.json
+$ lrbd -f /tmp/tpg.json
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Edit the current configuration with the editor joe
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ lrbd -e joe
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.RE
+.SH FILES
+.I /etc/sysconfig/lrbd
+.RS
+The environment file for customizing options for the lrbd.service
+.RE
+.SH AUTHOR
+Eric Jackson <ejackson@suse.com>
+.SH "SEE ALSO"
+.BR lrbd.conf (5),
+.BR targetcli (8),
