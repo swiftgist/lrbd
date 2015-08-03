@@ -54,6 +54,16 @@
             ] 
         }
     ], 
+    "portals": [
+        {
+            "name": "portal1",
+            "addresses": [ "172.16.1.16", "172.16.2.16" ]
+        },
+        {
+            "name": "portal2",
+            "addresses": [ "172.16.1.17", "172.16.2.17" ]
+        }
+    ],
     "pools": [
         {
             "pool": "rbd",
@@ -63,15 +73,8 @@
                     "images": [
                         {
                             "image": "city",
-                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
-                        }
-                    ],
-                    "portals": [
-                        {
-                            "portal": "172.16.1.16"
-                        }, 
-                        {
-                            "portal": "172.16.2.16"
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                            "portal": "portal1"
                         }
                     ]
                 }, 
@@ -80,25 +83,20 @@
                     "images": [
                         {
                             "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20", 
-                            "image": "writers"
+                            "image": "writers",
+                            "portal": "portal2"
                         }, 
                         {
                             "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
-                            "image": "writers"
+                            "image": "writers",
+                            "portal": "portal2"
                         }, 
                         {
                             "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
-                            "image": "wood"
+                            "image": "wood",
+                            "portal": "portal2"
                         }
-                    ], 
-                    "portals": [
-                        {
-                            "portal": "172.16.1.17"
-                        }, 
-                        {
-                            "portal": "172.16.2.17"
-                        }
-                    ]
+                    ] 
                 }
             ] 
         },
@@ -110,15 +108,8 @@
                     "images": [
                         {
                             "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
-                            "image": "cement"
-                        }
-                    ],
-                    "portals": [
-                        {
-                            "portal": "172.16.1.16"
-                        }, 
-                        {
-                            "portal": "172.16.2.16"
+                            "image": "cement",
+                            "portal": "portal1"
                         }
                     ]
                 } 
@@ -132,15 +123,8 @@
                     "images": [
                         {
                             "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
-                            "image": "mental"
-                        }
-                    ],
-                    "portals": [
-                        {
-                            "portal": "172.16.1.17"
-                        }, 
-                        {
-                            "portal": "172.16.2.17"
+                            "image": "mental",
+                            "portal": "portal2"
                         }
                     ]
                 } 

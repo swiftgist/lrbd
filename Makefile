@@ -3,7 +3,8 @@
 all: rpm
 
 tarball:
-	tar -czf ~/rpmbuild/SOURCES/lrbd-0.9.0.tar.gz --exclude .??* -C .. lrbd
+	VERSION=`awk '/^Version/ {print $$2}' lrbd.spec`; \
+	git archive --prefix lrbd/ -o ~/rpmbuild/SOURCES/lrbd-$$VERSION.tar.gz HEAD
 
 rpm: tarball
 	rpmbuild -bb lrbd.spec

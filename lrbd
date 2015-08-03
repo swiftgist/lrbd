@@ -26,8 +26,11 @@ import re, socket
 import pprint
 from collections import defaultdict
 import os.path
+import netifaces
 
 
+# CONFIGFS target path
+TARGET="/sys/kernel/config/target"
 
 def popen(cmd):
     """
@@ -101,11 +104,41 @@ def iqn(entry):
     else:
         return(Common.config['iqns'][0])
 
+def addresses():
+    """
+    Return a list of all ip addresses 
+    TODO: add IPv6
+    """
+    adds = []
+    for interface in netifaces.interfaces():
+        addrs = netifaces.ifaddresses(interface)
+        for entry in addrs[netifaces.AF_INET]:
+            adds.append(entry['addr'])
+    return(adds)
+
+def uniq(cmds):
+    """
+    Remove redundant entries from list of lists
+    """
+    u = {}
+    c = []
+    for cmd in cmds:
+        u[" ".join(cmd)] = ''
+    for k in u.keys():
+        c.append(k.split())
+    return(c)
+
 class Common:
     """
-    Sharing common configurations such as Common.config
+    Sharing common static configurations. 
     """
-    pass
+    config = {}
+
+class Runtime:
+    """
+    Sharing common runtime state.
+    """
+    config = {}
 
 
 class Content:
@@ -210,9 +243,10 @@ class Content:
             exit(1) 
         text = strip_comments(open(file).read())
         if (self.validate(text) and self.verify_mandatory_keys(text)):
-               #print "submitting:"
                self.submitted = json.loads(text)
-               #print self.submitted
+        else:
+            print "ERROR: file {} failed validation".format(file)
+            exit(1)
        
 
     def validate(self, text):
@@ -248,8 +282,9 @@ class Content:
         if not content['pools'][0]['gateways']:
             print "gateways have no entries"
             return False
-        if not 'host' in content['pools'][0]['gateways'][0]:
-            print "Mandatory key 'host' is missing"
+        if not ('host' in content['pools'][0]['gateways'][0] or
+            'target' in content['pools'][0]['gateways'][0]):
+            print "Mandatory key 'host' or 'target' is missing"
             return False
         if not 'images' in content['pools'][0]['gateways'][0]:
             print "Mandatory key 'images' is missing"
@@ -277,44 +312,106 @@ class Content:
             <host>  - pool information for gateway host
         """
         if self.submitted != self.current:
-            hosts = {}
-            attr = Attributes() 
-            if ('pools' in self.current and self.current['pools']):
-                for pool in self.current['pools']: 
-                    hosts[pool['pool']] = []
-                    for gateway in pool['gateways']:
-                        hosts[pool['pool']].append(gateway['host'])
-                for pool in self.submitted['pools']: 
-                    for gateway in pool['gateways']:
-                        hosts[pool['pool']].remove(gateway['host'])
-                    for host in hosts[pool['pool']]:
-                        attr.remove(str(pool['pool']), str(host))
+            self.attr = Attributes() 
+            self._remove_absent_entry()
+            self._remove_absent_auth()
 
-            if ('_auth' in self.current and self.current['_auth'] 
-                and not '_auth' in self.submitted):
-                for pool in self.submitted['pools']: 
-                    attr.remove_auth(str(pool['pool']))
                     
             for pool in self.submitted['pools']: 
                 for gateway in pool['gateways']:
-                    attr.write(str(pool['pool']), 
-                        str(gateway['host']), json.dumps(gateway))
+                    self._write_host(pool, gateway)
+                    self._write_target(pool, gateway)
                 if '_auth' in self.submitted:
-                    for entry in self.submitted['_auth']: 
-                        if 'host' in entry:
-                            attr.write(str(pool['pool']), 
-                                str('_' + entry['host']), json.dumps(entry))
-                        elif 'target' in entry:
-                            attr.write(str(pool['pool']), 
-                                str('_' + entry['target']), json.dumps(entry))
-                        else:
-                            print "ERROR: auth entry must contain either 'host' or 'target'"
-                            exit(1)
+                    self._write_auth(pool)
                 if '_target' in self.submitted:
-                    attr.write(str(pool['pool']), 
-                        str('_target'), json.dumps(self.submitted['_target']))
+                    self._write_targets(pool)
+                if 'portals' in self.submitted:
+                    self._write_portals(pool)
 
 
+    def _remove_absent_entry(self):
+        """
+        Remove host or target entries that have been deleted from the 
+        submitted configuration
+        """
+        hosts = {}
+        if ('pools' in self.current and self.current['pools']):
+            for pool in self.current['pools']: 
+                hosts[pool['pool']] = []
+                # Add current gateways
+                for gateway in pool['gateways']:
+                    if 'host' in gateway:
+                        hosts[pool['pool']].append(gateway['host'])
+                    if 'target' in gateway:
+                        print "Adding target: ", gateway['target']
+                        hosts[pool['pool']].append(gateway['target'])
+            for pool in self.submitted['pools']: 
+                # Subtract submitted gateways, skip new entries
+                for gateway in pool['gateways']:
+                    if ('host' in gateway and
+                        gateway['host'] in hosts[pool['pool']]):
+                        hosts[pool['pool']].remove(gateway['host'])
+                    if ('target' in gateway and 
+                        gateway['target'] in hosts[pool['pool']]):
+                        hosts[pool['pool']].remove(gateway['target'])
+                # Remove difference
+                for host in hosts[pool['pool']]:
+                    self.attr.remove(str(pool['pool']), str(host))
+
+    def _remove_absent_auth(self):
+        """
+        Remove auth section that has been deleted from the submitted 
+        configuration
+        """
+        if ('_auth' in self.current and self.current['_auth'] 
+            and not '_auth' in self.submitted):
+            for pool in self.submitted['pools']: 
+                self.attr.remove_auth(str(pool['pool']))
+
+    def _write_host(self, gateway, pool):
+        """
+        Write a host entry
+        """
+        if 'host' in gateway:
+            self.attr.write(str(pool['pool']), 
+                str(gateway['host']), json.dumps(gateway))
+
+    def _write_target(self, gateway, pool):
+        """
+        Write a target entry
+        """
+        if 'target' in gateway:
+            self.attr.write(str(pool['pool']), 
+                str(gateway['target']), json.dumps(gateway))
+
+    def _write_auth(self, pool):
+        """
+        Write authentication entry for host or target 
+        """
+        for entry in self.submitted['_auth']: 
+            if 'host' in entry:
+                self.attr.write(str(pool['pool']), 
+                    str('_' + entry['host']), json.dumps(entry))
+            elif 'target' in entry:
+                self.attr.write(str(pool['pool']), 
+                    str('_' + entry['target']), json.dumps(entry))
+            else:
+                print "ERROR: auth entry must contain either 'host' or 'target'"
+                exit(1)
+
+    def _write_targets(self, pool):
+        """
+        Write targets section
+        """
+        self.attr.write(str(pool['pool']), 
+            str('_target'), json.dumps(self.submitted['_target']))
+
+    def _write_portals(self, pool):
+        """
+        Write portals section
+        """
+        self.attr.write(str(pool['pool']), 
+            str('portals'), json.dumps(self.submitted['portals']))
 
 class Attributes:
     """
@@ -444,6 +541,32 @@ class Pools:
         pprint.pprint(self.pools)
 
 
+class PortalSection:
+    """
+    Manages the portal section of the extended attributes (i.e. all data stored 
+    under portals).
+    """
+
+    def __init__(self):
+        """
+        List of portals, entries are name and addresses
+        """
+        self.portals = []
+
+    def add(self, item):
+        """
+        Add entire structure, identical copies are stored in each pool so 
+        only one is needed.
+        """
+        if not self.portals:
+            self.portals.extend(item)
+
+    def display(self):
+        """
+        Useful for debugging
+        """
+        pprint.pprint(self.portals)
+
 class Targets:
     """
     Manages the target section of the extended attributes (i.e. all data stored 
@@ -452,7 +575,7 @@ class Targets:
 
     def __init__(self):
         """
-        List of targets, entires are either host and iqn or hosts and iqn
+        List of targets, entries are either host and iqn or hosts and iqn
         """
         self.targets = []
 
@@ -556,7 +679,8 @@ class Configs:
             ceph_conf - an alternative Ceph configuration file
             hostname - specify an alternative gateway host
         """
-        self.global_config = {}
+        #Common.config = {}
+        #Runtime.config = {}
 
         if (config_name == None):
             self.config_name = "lrbd.conf"
@@ -595,6 +719,7 @@ class Configs:
             exit(1)
     
         p = AllPools()
+        pt = PortalSection()
         t = Targets()
         a = Authentications()
 
@@ -609,23 +734,23 @@ class Configs:
 
             p.add(pool)
             t.add(json.loads(ioctx.get_xattr(self.config_name, '_target')))
+            pt.add(json.loads(ioctx.get_xattr(self.config_name, 'portals')))
 
             attrs = ioctx.get_xattrs(self.config_name)
             for key, value in attrs:
-                if key == "_target":
+                if key == "_target" or key == "portals":
                     continue
                 elif key[0] == "_":
                     a.add(json.loads(value))
-                    
                 else:
                     p.append('gateways', json.loads(value))
             ioctx.close
         cluster.shutdown()
 
-        self.global_config['pools'] = p.pools
-        self.global_config['_auth'] = a.authentications
-        self.global_config['_target'] = t.targets
-        Common.config = self.global_config
+        Common.config['pools'] = p.pools
+        Common.config['_auth'] = a.authentications
+        Common.config['_target'] = t.targets
+        Common.config['portals'] = pt.portals
 
     def retrieve_host(self):
         """
@@ -640,11 +765,14 @@ class Configs:
             print "ERROR: check for missing keyring"
             exit(1)
         p = Pools()
+        pt = PortalSection()
         t = Targets()
         a = Authentications()
 
         for pool in cluster.list_pools():
             ioctx = cluster.open_ioctx(pool)
+            t.add(json.loads(ioctx.get_xattr(self.config_name, '_target')))
+
             try:
                 value = ioctx.get_xattr(self.config_name, self.hostname)
             except rados.ObjectNotFound, e:
@@ -653,8 +781,9 @@ class Configs:
             except rados.NoData, e:
                 print "INFO: No configuration for {} in pool {}".format(self.hostname, pool)
                 continue
+
             p.assign(pool, json.loads(value))
-            t.add(json.loads(ioctx.get_xattr(self.config_name, '_target')))
+            pt.add(json.loads(ioctx.get_xattr(self.config_name, 'portals')))
             a.add(json.loads(ioctx.get_xattr(self.config_name, '_' + self.hostname)))
             for target in t.get(self.hostname):
                 a.add(json.loads(ioctx.get_xattr(self.config_name, str('_' + target))))
@@ -662,10 +791,10 @@ class Configs:
         cluster.shutdown()
         t.only(self.hostname)
 
-        self.global_config['pools'] = p.pools
-        self.global_config['_auth'] = a.authentications
-        self.global_config['_target'] = t.targets
-        Common.config = self.global_config
+        Common.config['pools'] = p.pools
+        Common.config['_auth'] = a.authentications
+        Common.config['_target'] = t.targets
+        Common.config['portals'] = pt.portals
 
     def display(self):
         """
@@ -673,7 +802,7 @@ class Configs:
         format obnoxious when reviewing.  TODO: custom JSON output with
         keys sorted by significance.
         """
-        print json.dumps(self.global_config, indent=4, sort_keys=True)
+        print json.dumps(Common.config, indent=4, sort_keys=True)
 
     def wipe(self):
         """
@@ -761,7 +890,7 @@ class Backstores:
                 cmd = [ "targetcli", "/backstores/iblock", "create", 
                         "name={}".format(entry['image']), 
                         "dev=/dev/rbd/{}/{}".format(pool, entry['image']) ]
-                backstore = glob.glob("/sys/kernel/config/target/core/iblock_*/{}".format(entry['image']))
+                backstore = glob.glob(TARGET + "/core/iblock_*/{}".format(entry['image']))
                 if not backstore: 
                     self.cmds.append(cmd)
 
@@ -792,7 +921,7 @@ class Iscsi:
 
         if self.iqns:
             for iqn in self.iqns:
-                path = glob.glob("/sys/kernel/config/target/iscsi/{}".format(iqn))
+                path = glob.glob(TARGET + "/iscsi/{}".format(iqn))
                 if not path:
                     cmd = list(base)
                     cmd.append(iqn)
@@ -810,95 +939,132 @@ class Iscsi:
         if self.iqns:
             Common.config['iqns'] = self.iqns
         else:
-            path = glob.glob("/sys/kernel/config/target/iscsi/iqn*")
+            path = glob.glob(TARGET + "/iscsi/iqn*")
             Common.config['iqns'] = [ basename(path[0]) ]
 
 
-class Luns:
+class TPGs:
     """
-    Manages the creation and mapping of luns.  Also, provides method for 
-    disabling auto add which is necessary for acls.
+    Creates any additional TPGs needed.
     """
 
     def __init__(self):
         """
-        Skips existing luns.  Builds commands for each image under the 
-        correct target.
+        Track several states.  
+
+            self.cmds - final list of commands to be executed
+            self.remote - TPG for holding remote gateway portals per target
+            self.tpg - running counter of TPG per target
+            self.portals - maps each portal to TPG per target
         """
         self.cmds = []
-        self.luns = []
+        self.remote = {}
         self.pools = Common.config['pools']
-                
-        self.find()
-        # Does completed need to be per target now?
-        completed = []
+        Runtime.config['addresses'] = addresses()
+
+        self.tpg = {}
+        self.portals = {}
+
+        self._add()
+        self._remote()
+        Runtime.config['remote'] = self.remote
+        Runtime.config['portals'] = self.portals
+
+    def _add(self):
+        """
+        Adds a TPG for each portal group.  Since iscsi.create() makes tpg1,
+        skips that one naturally.
+        """
         for pool in self.pools.keys():
             for entry in self.pools[pool]['images']:
-                if (not entry['image'] in completed and
-                    not entry['image'] in self.luns):
-                    completed.append(entry['image'])
-                    cmd = [ "targetcli", "/iscsi/{}/tpg1/luns".format(iqn(entry)), "create", "/backstores/iblock/{}".format(entry['image']) ] 
-                    self.cmds.append(cmd)
+                target = iqn(self.pools[pool])
+                if not target in self.remote:
+                    self.remote[target] = None
+                if not target in self.tpg:
+                    self.tpg[target] = 1
+                if not target in self.portals:
+                    self.portals[target] = {}
+                if not 'portal' in entry:
+                    print "ERROR: portal missing from pool {}".format(pool)
+                    exit(1)
+                if not entry['portal'] in self.portals[target]:
+                    self.portals[target][entry['portal']] = self.tpg[target]
+                    self.tpg[target] += 1 
+                    self.cmds.extend(self._cmd(target, 
+                                     self.portals[target][entry['portal']]))
+                    
+    def _remote(self):
+        """
+        Adds a TPG for holding remote gateway portals.  Checks each target.
+        """
+        
+        for target in self.portals.keys():
+            for name in self.portals[target].keys():
+                for entry in Common.config['portals']:
+                    if name == entry['name']:
+                        for addr in entry['addresses']:
+                            if not addr in Runtime.config['addresses']:
+                                if not self.remote[target]:
+                                    self.remote[target] = self.tpg[target]
+                                    self.cmds.append(self._cmd(target, 
+                                                         self.tpg[target]))
                 
-    def find(self):
+    def disable_remote(self):
         """
-        Scan paths for existing luns and save lun name to list
+        Disable TPG and enable discoverable_while_disabled.
         """
-        for pool in self.pools.keys():
-            for entry in self.pools[pool]['images']:
-                udev_paths = glob.glob("/sys/kernel/config/target/iscsi/{}/tpgt_*/lun/lun_*/*/udev_path".format(iqn(entry)))
-                for udev_path in udev_paths:
-                    contents = open(udev_path).read()
-                    self.luns.append(basename(contents.rstrip('\n')))
+        for target in Runtime.config['remote'].keys():
+            tpg = Runtime.config['remote'][target]
+            if not tpg:
+                continue
+            path = TARGET + "/iscsi/{}/tpgt_{}/attrib/discoverable_while_disabled".format(target, tpg)
+            dwd = open(path, "w")
+            dwd.write("1")
+            dwd.close()
+            tpg_path = TARGET + "/iscsi/{}/tpgt_{}/enable".format(target, tpg)
+            enabled = open(tpg_path).read().rstrip('\n')
+            if (enabled == "1"):
+                popen([ "targetcli", "/iscsi/{}/tpg{}".format(target, tpg), "disable" ])
+
+
+    def _cmd(self, target, tpg):
+        """
+        Return targetcli command if configfs entry is not present
+        """
+        path = glob.glob(TARGET + "/iscsi/{}/tpgt_{}".format(target, tpg))
+        if not path:
+            return([ "targetcli", "/iscsi/{}".format(target), 
+                         "create {}".format(tpg) ])
+        return([])
+
+
+
+    def _addresses(self):
+        """
+        Return a list of all ip addresses 
+        TODO: add IPv6
+        """
+        adds = []
+        for interface in netifaces.interfaces():
+            addrs = netifaces.ifaddresses(interface)
+            for entry in addrs[netifaces.AF_INET]:
+                adds.append(entry['addr'])
+        return(adds)
 
 
     def create(self):
         """
-        Disable auto mapping.  Execute saved commands.
+        Execute commands and assign list of targets to Common.config['iqns']
         """
-        self.disable_auto_add_mapped_luns()
         for cmd in self.cmds:
-            popen(cmd)
-
-    def disable_auto_add_mapped_luns(self):
-        """
-        Allow device to initiator mapping by disabling auto mapping.
-        """
-        proc = Popen(["targetcli", "get", "global", "auto_add_mapped_luns"], stdout=PIPE, stderr=PIPE)
-        for line in proc.stdout:
-            results = re.split(r'=', line)
-            if (results[1].rstrip() != 'false'):
-                cmd = [ "targetcli", "set", "global", "auto_add_mapped_luns=false" ]
+            if cmd:
                 popen(cmd)
-
-    def map(self):
-        """
-        Creates mapped luns under each initiator.  Skips existing. 
-        """
-        for pool in self.pools.keys():
-            for entry in self.pools[pool]['images']:
-                lun_path = glob.glob("/sys/kernel/config/target/core/iblock_*/{}".format(entry['image']))
-                if not lun_path:
-                    print "ERROR: iblock backstore for '{}' image does not exist".format(entry['image'])
-                    exit(1)
-                lun = re.split("[/_]", lun_path[0])[7]
-
-                if '_auth' in Common.config:
-                    for auth in Common.config['_auth']:
-                        if 'acls' in auth and auth['authentication'] == "acls":
-                            for acl in auth['acls']:
-
-                                path = glob.glob("/sys/kernel/config/target/iscsi/{}/tpgt_*/acls/{}/lun_{}".format(iqn(entry), entry['iqn'], lun))
-                                if not path:
-                                    cmd = [ "targetcli", "/iscsi/{}/tpg1/acls/{}".format(iqn(entry), entry['iqn']), "create", lun, "0" ] 
-                                    popen(cmd)
-
-
+        
 
 class Portals:
     """
     Manage the creation of portals, skipping existing.  If none are provided
-    in the configuration, assign the base targetcli command which is select
+    in the configuration, assign the base targetcli command which selects
     a default interface.
     """
 
@@ -909,18 +1075,33 @@ class Portals:
         self.luns = []
         self.pools = Common.config['pools']
 
-        for pool in self.pools.keys():
-            if 'portals' in self.pools[pool]:
-                for entry in self.pools[pool]['portals']:
-                    cmd = [ "targetcli", "/iscsi/{}/tpg1/portals".format(iqn(entry)), "create", entry['portal'] ] 
-                    portal = glob.glob("/sys/kernel/config/target/iscsi/{}/tpgt_*/np/{}*".format(iqn(entry), entry['portal']))
-                    if not portal:
-                        self.cmds.append(cmd)
-            else:
-                cmd = [ "targetcli", "/iscsi/{}/tpg1/portals".format(iqn({})), "create" ] 
-                portal = glob.glob("/sys/kernel/config/target/iscsi/{}/tpgt_*/np/*".format(iqn({})))
-                if not portal:
-                    self.cmds.append(cmd)
+        if 'portals' in Common.config:
+            for target in Runtime.config['portals'].keys():
+                for portal in Runtime.config['portals'][target]:
+                    for entry in Common.config['portals']:
+                        if entry['name'] == portal:
+                            for address in entry['addresses']:
+                                if address in Runtime.config['addresses']:
+                                    self._cmd(target, 
+                                         Runtime.config['portals'][target][portal], 
+                                         address)
+                                else:
+                                    self._cmd(target, 
+                                         Runtime.config['remote'][target], 
+                                         address)
+        else:
+            _cmd(iqn({}), "1", "")
+                        
+
+    def _cmd(self, target, tpg, address):
+        """
+        Compose targetcli commmand for creating portal if needed.
+        """
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}/portals".format(target, tpg), "create", address ] 
+        portal = glob.glob(TARGET + "/iscsi/{}/tpgt_{}/np/{}*".format(target, tpg, address))
+        if not portal:
+            self.cmds.append(cmd)
+
 
     def create(self):
         """
@@ -942,6 +1123,122 @@ class Portals:
             c.append(k.split())
         return(c)
 
+class Luns:
+    """
+    Manages the creation and mapping of luns.  Also, provides method for 
+    disabling auto add which is necessary for acls.
+    """
+
+    def __init__(self):
+        """
+        Skips existing luns.  Builds commands for each image under the 
+        correct target.
+        """
+        self.cmds = []
+        self.luns = []
+        self.pools = Common.config['pools']
+                
+        self._find()
+
+        for pool in self.pools.keys():
+            for entry in self.pools[pool]['images']:
+                if not entry['image'] in self.luns:
+                    target = iqn(self.pools[pool])
+                    tpg = Runtime.config['portals'][target][entry['portal']]
+                    self._cmd(target, tpg, entry['image'])
+                
+    def _find(self):
+        """
+        Scan paths for existing luns and save lun name to list
+        """
+        for pool in self.pools.keys():
+            for entry in self.pools[pool]['images']:
+                udev_paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/lun/lun_*/*/udev_path".format(iqn(entry)))
+                for udev_path in udev_paths:
+                    contents = open(udev_path).read()
+                    self.luns.append(basename(contents.rstrip('\n')))
+
+    def _cmd(self, target, tpg, image):
+        """
+        Compose targetcli commmand for creating lun if needed.
+        """
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}/luns".format(target, tpg), "create", "/backstores/iblock/{}".format(image) ] 
+        self.cmds.append(cmd)
+
+    def create(self):
+        """
+        Disable auto mapping.  Execute saved commands.
+        """
+        self.disable_auto_add_mapped_luns()
+        for cmd in self.cmds:
+            popen(cmd)
+
+    def disable_auto_add_mapped_luns(self):
+        """
+        Allow device to initiator mapping by disabling auto mapping.
+        """
+        proc = Popen(["targetcli", "get", "global", "auto_add_mapped_luns"], stdout=PIPE, stderr=PIPE)
+        for line in proc.stdout:
+            results = re.split(r'=', line)
+            if (results[1].rstrip() != 'false'):
+                cmd = [ "targetcli", "set", "global", "auto_add_mapped_luns=false" ]
+                popen(cmd)
+
+class Map:
+
+    def __init__(self):
+        """
+        Creates mapped luns under each initiator.  Skips existing. 
+        """
+        self.cmds = []
+        self.luns = []
+        self.pools = Common.config['pools']
+
+        for pool in self.pools.keys():
+            for entry in self.pools[pool]['images']:
+                lun = self._lun(entry['image'])
+                target = iqn(self.pools[pool])
+                tpg = Runtime.config['portals'][target][entry['portal']]
+                self._cmd(target, tpg, entry['iqn'], lun)
+              
+
+    def _lun(self, image):
+        """
+        Return the numeric value of the lun for this image
+
+            image - name of RBD image
+        """
+        lun_path = glob.glob(TARGET + "/core/iblock_*/{}".format(image))
+        if not lun_path:
+            print "ERROR: iblock backstore for '{}' image does not exist".format(image)
+            exit(1)
+        return(re.split("[/_]", lun_path[0])[7])
+
+    def _cmd(self, target, tpg, initiator, lun):
+        """
+        Compose command to create a mapped lun.  Check that acl exists and
+        that the mapped lun does not.
+
+            target - iqn of the target
+            tpg - number of tpg, most likely "1"
+            initiator - iqn of client
+            lun - number for block device of RBD image
+        """
+        path = glob.glob(TARGET + "/iscsi/{}/tpgt_{}/acls/{}".format(target, tpg, initiator))
+        if not path:
+            print "ERROR: acl missing for initiator {} under tpg {} under target {}".format(initiator, tpg, target)
+            exit(1)
+        path = glob.glob(TARGET + "/iscsi/{}/tpgt_{}/acls/{}/lun_{}".format(target, tpg, initiator, lun))
+        if not path:
+            self.cmds.append([ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(target, tpg, initiator), "create", lun, lun ])
+
+    def map(self):
+        """
+        Execute saved commands.
+        """
+        for cmd in self.cmds:
+            popen(cmd)
+
 
 class Acls:
     """
@@ -951,40 +1248,49 @@ class Acls:
 
     def __init__(self):
         """
-        Scan initiator iqn from image entries and check for corresponding 
-        pathnames.  Append to list.
-
-        Scan initiators from _auth section and create commands.  Exclude from
-        above.
+        Create acl under correct tpg per target.  Skip existing.  
+        Scan portal addresses for remote gateways.  Create acl under remote 
+        tpg, if necessary.
         """
         self.cmds = []
         self.pools = Common.config['pools']
-        initiators = []
+        self.initiators = []
 
+        self._find()
         for pool in self.pools.keys():
             for entry in self.pools[pool]['images']:
-                paths = glob.glob("/sys/kernel/config/target/iscsi/{}/tpgt_*/acls/*".format(iqn(entry)))
+                if not entry['iqn'] in self.initiators:
+                    target = iqn(self.pools[pool])
+                    tpg = Runtime.config['portals'][target][entry['portal']]
+                    self._cmd(target, tpg, entry['iqn'])
+                    for pentry in Common.config['portals']:
+                        if (pentry['name'] == entry['portal']):
+                            for address in pentry['addresses']:
+                                if not address in Runtime.config['addresses']:
+                                    tpg = Runtime.config['remote'][target]
+                                    self._cmd(target, tpg, entry['iqn'])
+                    
+    def _find(self):
+        """
+        Add existing initiators to list
+        """
+        for pool in self.pools.keys():
+            paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/acls/*".format(iqn(self.pools[pool])))
             for path in paths:
-                initiators.append(basename(path))
+                self.initiators.append(basename(path))
 
-        if '_auth' in Common.config:
-            for auth in Common.config['_auth']:
-                if 'acls' in auth:
-                    for acl in auth['acls']:
-                        if not acl['iqn'] in initiators:
-                            if 'target' in auth:
-                                target = auth['target']
-                            else:
-                                target = Common.config['_target'][0]['iqn']
-                            cmd = [ "targetcli", "/iscsi/{}/tpg1/acls".format(target), "create", acl['iqn'] ] 
-                            self.cmds.append(cmd) 
-
+    def _cmd(self, target, tpg, initiator):
+        """
+        Compose targetcli command for creating an acl.  Append to list.
+        """
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls".format(target, tpg), "create", initiator ] 
+        self.cmds.append(cmd) 
                
     def create(self):
         """
-        Execute saved commands
+        Execute unique, saved commands
         """
-        for cmd in self.cmds:
+        for cmd in uniq(self.cmds):
             popen(cmd)
 
 
@@ -1006,6 +1312,7 @@ class Auth:
         if '_auth' in Common.config['_auth']:
             for auth in Common.config['_auth']:
                 self.target = iqn(auth)
+                print "auth: ", auth['authentication']
                 if auth['authentication'] == "none":
                     self.cmds.append(self.set_noauth(auth))
                 elif auth['authentication'] == "tpg":
@@ -1023,7 +1330,7 @@ class Auth:
         """
         Disable authentication
         """
-        path = "/sys/kernel/config/target/iscsi/{}/tpgt_1/attrib".format(iqn(auth))
+        path = TARGET + "/iscsi/{}/tpgt_1/attrib".format(iqn(auth))
         authentication = open(path + "/authentication").read().rstrip('\n')
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
         
@@ -1064,7 +1371,7 @@ class Auth:
         keys = [ 'userid', 'password']
         check_keys(keys, auth['discovery'], "discovery under _auth")
 
-        path = "/sys/kernel/config/target/iscsi/discovery_auth"
+        path = TARGET + "/iscsi/discovery_auth"
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
@@ -1087,7 +1394,7 @@ class Auth:
         keys = [ 'userid', 'password', 'userid_mutual', 'password_mutual']
         check_keys(keys, auth['discovery'], "discovery under _auth")
 
-        path = "/sys/kernel/config/target/iscsi/discovery_auth"
+        path = TARGET + "/iscsi/discovery_auth"
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
@@ -1145,7 +1452,7 @@ class Auth:
             keys = [ 'userid', 'password']
             check_keys(keys, auth['tpg'], "tpg under _auth")
                     
-            path = "/sys/kernel/config/target/iscsi/{}/tpgt_1/auth".format(iqn(auth))
+            path = TARGET + "/iscsi/{}/tpgt_1/auth".format(iqn(auth))
             current = {}
             current['userid'] = open(path + "/userid").read().rstrip('\n')
             current['password'] = open(path + "/password").read().rstrip('\n')
@@ -1168,7 +1475,7 @@ class Auth:
         keys = [ 'userid', 'password', 'userid_mutual', 'password_mutual']
         check_keys(keys, auth['tpg'], "tpg under _auth")
 
-        path = "/sys/kernel/config/target/iscsi/{}/tpgt_1/auth".format(iqn(auth))
+        path = TARGET + "/iscsi/{}/tpgt_1/auth".format(iqn(auth))
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
@@ -1194,7 +1501,7 @@ class Auth:
         Enable authentication, allow writing and enable acl generation. Checks
         current settings.
         """
-        path = "/sys/kernel/config/target/iscsi/{}/tpgt_1/attrib".format(iqn(auth))
+        path = TARGET + "/iscsi/{}/tpgt_1/attrib".format(iqn(auth))
         authentication = open(path + "/authentication").read().rstrip('\n')
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
         generate_node_acls = open(path + "/generate_node_acls").read().rstrip('\n')
@@ -1233,7 +1540,7 @@ class Auth:
         keys = [ 'userid', 'password']
         check_keys(keys, acl, "acl")
 
-        path = "/sys/kernel/config/target/iscsi/{}/tpgt_1/acls/{}/auth".format(iqn(auth), acl['iqn'])
+        path = TARGET + "/iscsi/{}/tpgt_1/acls/{}/auth".format(iqn(auth), acl['iqn'])
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
@@ -1254,7 +1561,7 @@ class Auth:
         keys = [ 'userid', 'password', 'userid_mutual', 'password_mutual']
         check_keys(keys, acl, "acl")
 
-        path = "/sys/kernel/config/target/iscsi/{}/tpgt_1/acls/{}/auth".format(iqn(auth), acl['iqn'])
+        path = TARGET + "/iscsi/{}/tpgt_1/acls/{}/auth".format(iqn(auth), acl['iqn'])
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
@@ -1275,7 +1582,7 @@ class Auth:
         """
         Enable authentication, disable acls generation.  Checks current settings.
         """
-        path = "/sys/kernel/config/target/iscsi/{}/tpgt_1/attrib".format(iqn(auth))
+        path = TARGET + "/iscsi/{}/tpgt_1/attrib".format(iqn(auth))
         authentication = open(path + "/authentication").read().rstrip('\n')
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
         generate_node_acls = open(path + "/generate_node_acls").read().rstrip('\n')
@@ -1287,8 +1594,8 @@ class Auth:
         return([ "targetcli", "/iscsi/{}/tpg1".format(self.iqn), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=0" ]) 
 
     def create(self):
-        if not self.cmds:
-            for cmd in self.cmds:
+        for cmd in self.cmds:
+            if cmd:
                 popen(cmd)
 
 
@@ -1335,13 +1642,17 @@ def main(args):
         backstores.create()
         iscsi = Iscsi()
         iscsi.create()
+        tpgs = TPGs()
+        tpgs.create()
+        tpgs.disable_remote()
         luns = Luns()
         luns.create()
         portals = Portals()
         portals.create()
         acls = Acls()
         acls.create()
-        luns.map()
+        maps = Map()
+        maps.map()
         auth = Auth()
         auth.create()
 

@@ -1,0 +1,247 @@
+.TH lrbd 5 
+.SH NAME
+lrbd.conf \- configuration object for Ceph rbd images
+.SH DESCRIPTION
+The 
+.B lrbd.conf
+holds the configuration describing the relationships of pools, images,
+gateways, targets, initiators and authentication.  Although the
+.B lrbd 
+command displays the configuration as a single text file, 
+.B lrbd.conf
+is the name of the object in a pool and never resides on a filesystem.  Each 
+pool can have at most one configuration object.  If a pool has no RBD images
+configured for iSCSI access, that pool will not have a configuration object.
+
+All configuration settings are stored in extended attributes.  The extended 
+attributes are 
+.B _target,
+.B hostname,
+.B target,
+.B _hostname
+and
+.B _target.
+The leading underscores prevent name collisions with potential hostnames.  
+.PP
+The 
+.B hostname
+and
+.B target
+extended attributes contain the pool configuration.  
+.SS POOLS
+Ceph pools may contain objects and RBD images.  An RBD image can be mounted
+to a gateway host, shared via an iSCSI target and accessed by an iSCSI 
+initiator.  Likewise, multiple pools may contain multiple RBD images, which
+can be mounted to multiple gateways and accessed by multiple initiators.
+Additionally, gateways may grant access across multiple network paths or 
+portals. The following JSON structure represents the pool configuration:
+.PP
+.RS 2
+"pools": [ 
+.RS 2
+{
+.RS 2
+"gateways: [ 
+.RS 2
+{
+.RS 2
+"host": 
+.I hostname,
+.RS 0
+"images": [ 
+.RS 2
+{
+.RS 2
+"image": 
+.I image_name,
+.RS 0
+"iqn":
+.I initiator_iqn
+.RE
+.RE
+}, ... 
+.RE
+],
+.RE
+"portals": [ 
+.RS 2
+{
+.RS 2
+"portal": 
+.I ip_address
+.RE
+}, ... 
+.RE
+],
+.RE
+}, ...
+.RE
+],
+.RE
+} 
+.RE
+]
+.SS AUTHENTICATION
+Since gateways may have different security requirements, configurations
+for authentication are tied to each host and target.  The 
+.B _host
+and
+.B _target
+extended attributes store the authentication configuration and credentials.
+A gateway host will only read the relevant entries.  These entries are
+combined under a common structure named 
+.B _auth.
+.PP
+Authentication for iSCSI is flexible.  Authentication may be absent or disabled,
+have common credentials from all initiators to a gateway target or have 
+specific credentials for each initiator to a gateway target.  Additionally, 
+discovery authentication can be enabled independently which allows browsing 
+of targets on a gateway with proper credentials.  Lastly, iSCSI supports 
+mutual authentication mandating that a gateway target must authenticate 
+itself to an initiator.  All methods support mutual athentication.
+.PP
+Many of the authentication sections may be absent or present, but disabled.
+This allows for quick experimentation prior to finalizing a production
+configuration.  The following JSON structure represents the entire
+authentication configuration:
+.PP
+.RS 2
+"_auth": [
+.RS 2
+{
+.RS 2
+"host|target":
+.I hostname|target_iqn,
+.RS 0
+"authentication":
+.I none|tpg|acls,
+.RS 0
+"tpg": {
+.RS 2
+"userid": 
+.I initiator_userid,
+.RS 0
+"password",
+.I initiator_password,
+.RE
+.RS 0
+"mutual":
+.I enable|disable,
+.RE
+.RS 0
+"userid_mutual":
+.I target_userid,
+.RE
+.RS 0
+"password_mutual":
+.I target_password
+.RE
+.RE
+.RS 0
+"acls": [
+.RS 2
+{
+.RS 2
+"iqn": 
+.I initiator_iqn,
+.RS 0
+"userid": 
+.I initiator_userid,
+.RE
+.RS 0
+"password",
+.I initiator_password,
+.RE
+.RS 0
+"mutual":
+.I enable|disable,
+.RE
+.RS 0
+"userid_mutual":
+.I target_userid,
+.RE
+.RS 0
+"password_mutual":
+.I target_password
+.RE
+.RE
+}, ...
+.RE
+],
+.RS 0
+"discovery": {
+.RS 2
+"auth": 
+.I enable|disable,
+.RS 0
+"userid": 
+.I initiator_userid,
+.RS 0
+"password",
+.I initiator_password,
+.RE
+.RS 0
+"mutual":
+.I enable|disable,
+.RE
+.RS 0
+"userid_mutual":
+.I target_userid,
+.RE
+.RS 0
+"password_mutual":
+.I target_password
+.RE
+.RE
+}
+.RE
+},
+.RE
+.RE
+.RE
+.RE
+.RE
+}, ...
+.RE
+]
+
+.SS TARGETS
+The target section is optional, but only recommended for demonstrations and
+investigations.  Without a static iqn, a target will change between 
+reconfigurations including reboots.
+.PP
+The target structure is stored in the extended attribute
+.B _target
+and is the simplest.  A target is associated with a host or group of hosts
+as shown below:
+.PP
+.RS 2
+"_target": [
+.RS 2
+{
+.RS 2
+"host|hosts":
+.I hostname|[host1, host2, ... ],
+.RS 0
+"iqn":
+.I target_iqn,
+.RE
+.RE
+}, ...
+.RE
+]
+.RE
+.SS REDUNDANCY
+
+.SH EXAMPLES
+.RE
+.SH FILES
+.I /etc/sysconfig/lrbd
+.RS
+The environment file for customizing options for the lrbd.service
+.RE
+.SH AUTHOR
+Eric Jackson <ejackson@suse.com>
+.SH "SEE ALSO"
+.BR lrbd.conf (5),
+.BR targetcli (8),

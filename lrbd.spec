@@ -1,10 +1,28 @@
+#
+# spec file for package lrbd
+#
+# Copyright (c) 2015 SUSE LINUX GmbH, Nuernberg, Germany.
+#
+# All modifications and additions to the file contributed by third parties
+# remain the property of their copyright owners, unless otherwise agreed
+# upon. The license for this file, and modifications and additions to the
+# file, is the same license as for the pristine package itself (unless the
+# license for the pristine package is not an Open Source License, in which
+# case the license is the MIT License). An "Open Source License" is a
+# license that conforms to the Open Source Definition (Version 1.9)
+# published by the Open Source Initiative.
+
+# Please submit bugfixes or comments via http://bugs.opensuse.org/
+
+
 Summary: lrbd
 Name: lrbd
-Version: 0.9.0
+Version: 0.9.1
 Release: 0
 License: LGPL-2.1+ 
+Group: System Environment/Base
 Distribution: SUSE
-URL: https://github.com/swiftgist/lrbd
+URL: http://bugs.opensuse.org
 Source0: lrbd-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-root
 BuildArch: noarch
@@ -18,25 +36,25 @@ applying targetcli commands to a host.
 
 
 %build
-tar xvzf %{SOURCE0}
-rm -f lrbd/man/*.gz
+%__tar xvzf %{SOURCE0}
+%__rm -f lrbd/man/*.gz
 %__gzip lrbd/man/lrbd.*
 
 %install
-%define _samples %{buildroot}/%{_docdir}/%{name}/samples
+%define _samples %{buildroot}%{_docdir}/%{name}/samples
 mkdir -p %{buildroot}/var/adm/fillup-templates
-mkdir -p %{buildroot}/usr/lib/systemd/system
-mkdir -p %{buildroot}/%{_docdir}/%{name}/samples
-mkdir -p %{buildroot}/usr/share/man/man8
-mkdir -p %{buildroot}/usr/sbin
+mkdir -p %{buildroot}%{_unitdir}
+mkdir -p %{buildroot}%{_docdir}/%{name}/samples
+mkdir -p %{buildroot}%{_mandir}/man8
+mkdir -p %{buildroot}%{_sbindir}
 
 cd lrbd
-install -m 555 lrbd %{buildroot}/usr/sbin
-install -m 644 man/lrbd.8.gz %{buildroot}/%{_mandir}/man8
+install -m 555 lrbd %{buildroot}%{_sbindir}
+install -m 644 man/lrbd.8.gz %{buildroot}%{_mandir}/man8
 
 install -m 644 sysconfig/lrbd %{buildroot}/var/adm/fillup-templates/sysconfig.lrbd
-install -m 644 systemd/lrbd.service %{buildroot}/usr/lib/systemd/system
-ln -sf %_sbindir/service %{buildroot}%_sbindir/rclrbd
+install -m 644 systemd/lrbd.service %{buildroot}%{_unitdir}
+ln -sf %{_sbindir}/service %{buildroot}%_sbindir/rclrbd
 
 install -m 644 samples/acls+discovery.json  %{_samples}
 install -m 644 samples/acls+discovery+mutual.json  %{_samples}
@@ -74,10 +92,10 @@ rm -rf $RPM_BUILD_ROOT
 %files 
 %defattr(-,root,root)
 /var/adm/fillup-templates/sysconfig.lrbd
-/usr/sbin/lrbd
-/usr/sbin/rclrbd
+%{_sbindir}/lrbd
+%{_sbindir}/rclrbd
 %{_mandir}/man8/lrbd.8.gz
-/usr/lib/systemd/system/lrbd.service
+%{_unitdir}/lrbd.service
 %dir %attr(-, root, root) %{_docdir}/%{name}
 %dir %attr(-, root, root) %{_docdir}/%{name}/samples
 %{_docdir}/%{name}/samples/*
