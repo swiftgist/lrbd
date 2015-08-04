@@ -1,0 +1,37 @@
+{
+    "targets": [
+      {
+        "host": "igw1",
+        "target": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.1a2b6ae09141"
+      }
+    ],
+    "auth": [
+        {
+            "host": "igw1", 
+            "authentication": "none"
+        } 
+    ], 
+    "portals": [
+        {
+            "name": "portal1",
+            "addresses": [ "172.16.1.16 3261", "172.16.2.16 3261" ]
+        }
+    ],
+    "pools": [
+        {
+            "pool": "rbd",
+            "gateways": [
+                {
+                    "host": "igw1", 
+                    "tpg": [
+                        {
+                            "portal": "portal1",
+                            "image": "city",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                        }
+                    ]
+                } 
+            ] 
+        }
+    ]
+}

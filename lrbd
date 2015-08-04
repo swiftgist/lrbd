@@ -941,7 +941,7 @@ class TPGs:
                         if not entry['portal'] in self.portals[target]:
                             self.portals[target][entry['portal']] = self.tpg[target]
                             self.tpg[target] += 1 
-                            self.cmds.extend(self._cmd(target, 
+                            self.cmds.append(self._cmd(target, 
                                              self.portals[target][entry['portal']]))
 
                     
@@ -954,7 +954,8 @@ class TPGs:
             for name in self.portals[target].keys():
                 for entry in Common.config['portals']:
                     if name == entry['name']:
-                        for addr in entry['addresses']:
+                        for address in entry['addresses']:
+                            addr = re.split(" ", address)[0]
                             if not addr in Runtime.config['addresses']:
                                 if not self.remote[target]:
                                     self.remote[target] = self.tpg[target]
@@ -1036,7 +1037,9 @@ class Portals:
                     for entry in Common.config['portals']:
                         if entry['name'] == portal:
                             for address in entry['addresses']:
-                                if address in Runtime.config['addresses']:
+                                # Strip Port 
+                                addr = re.split(" ", address)[0]
+                                if addr in Runtime.config['addresses']:
                                     self._cmd(target, 
                                          Runtime.config['portals'][target][portal], 
                                          address)
@@ -1117,7 +1120,7 @@ class Luns:
         Disable auto mapping.  Execute saved commands.
         """
         self.disable_auto_add_mapped_luns()
-        for cmd in self.cmds:
+        for cmd in uniq(self.cmds):
             popen(cmd)
 
     def disable_auto_add_mapped_luns(self):
@@ -1219,7 +1222,8 @@ class Acls:
                             for poentry in Common.config['portals']:
                                 if (poentry['name'] == entry['portal']):
                                     for address in poentry['addresses']:
-                                        if not address in Runtime.config['addresses']:
+                                        addr = re.split(" ", address)[0]
+                                        if not addr in Runtime.config['addresses']:
                                             tpg = Runtime.config['remote'][target]
                                             self._cmd(target, tpg, entry['initiator'])
                     

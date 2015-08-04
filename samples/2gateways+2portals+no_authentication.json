@@ -1,0 +1,38 @@
+{
+  "auth": [
+    {
+      "authentication": "none", 
+      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+    }
+  ], 
+  "targets": [
+    {
+      "hosts": [ "igw1", "igw2" ],
+      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+    }
+  ], 
+  "portals": [
+      {
+          "name": "portal3",
+          "addresses": [ "172.16.1.16", "172.16.2.16", 
+                         "172.16.1.17", "172.16.2.17" ]
+      }
+  ],
+  "pools": [
+    {
+      "pool": "rbd",
+      "gateways": [
+        {
+          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
+          "tpg": [
+            {
+              "portal": "portal3",
+              "image": "city", 
+              "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+            }
+          ] 
+        } 
+      ] 
+    } 
+  ]
+}
