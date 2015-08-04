@@ -368,7 +368,7 @@ class Content:
             for pool in self.submitted['pools']: 
                 self.attr.remove_auth(str(pool['pool']))
 
-    def _write_host(self, gateway, pool):
+    def _write_host(self, pool, gateway):
         """
         Write a host entry
         """
@@ -376,7 +376,7 @@ class Content:
             self.attr.write(str(pool['pool']), 
                 str(gateway['host']), json.dumps(gateway))
 
-    def _write_target(self, gateway, pool):
+    def _write_target(self, pool, gateway):
         """
         Write a target entry
         """
