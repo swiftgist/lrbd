@@ -1,15 +1,15 @@
 {
-    "_target": [
+    "targets": [
       {
         "host": "igw1",
-        "iqn": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.1a2b6ae09141"
+        "target": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.1a2b6ae09141"
       },
       {
         "host": "igw2",
-        "iqn": "iqn.2003-01.org.linux-iscsi.igw2.x86:sn.b611a553e579"
+        "target": "iqn.2003-01.org.linux-iscsi.igw2.x86:sn.b611a553e579"
       }
     ],
-    "_auth": [
+    "auth": [
         {
             "host": "igw1", 
             "authentication": "none"
@@ -35,30 +35,30 @@
             "gateways": [
                 {
                     "host": "igw1", 
-                    "images": [
+                    "tpg": [
                         {
                             "portal": "portal1",
                             "image": "city",
-                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
                         }
                     ]
                 }, 
                 {
                     "host": "igw2", 
-                    "images": [
+                    "tpg": [
                         {
                             "portal": "portal2",
-                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20", 
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20", 
                             "image": "writers"
                         }, 
                         {
                             "portal": "portal2",
-                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
                             "image": "writers"
                         }, 
                         {
                             "portal": "portal2",
-                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
                             "image": "wood"
                         }
                     ] 
@@ -70,10 +70,10 @@
             "gateways": [
                 {
                     "host": "igw1", 
-                    "images": [
+                    "tpg": [
                         {
                             "portal": "portal1",
-                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
                             "image": "cement"
                         }
                     ]
