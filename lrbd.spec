@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 0.9.2
+Version: 0.9.3
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
@@ -26,6 +26,8 @@ URL: http://bugs.opensuse.org
 Source0: lrbd-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-root
 BuildArch: noarch
+Requires: python-netifaces
+Requires: targetcli
 Summary: Configures iSCSI access to Ceph rbd images
 
 %description
