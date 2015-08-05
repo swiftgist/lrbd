@@ -5,29 +5,27 @@ lrbd.conf \- configuration object for Ceph rbd images
 The 
 .B lrbd.conf
 holds the configuration describing the relationships of pools, images,
-gateways, targets, initiators and authentication.  Although the
+luns, gateways, targets, tpgs, initiators and authentication.  Although the
 .B lrbd 
 command displays the configuration as a single text file, 
 .B lrbd.conf
 is the name of the object in a pool and never resides on a filesystem.  Each 
 pool can have at most one configuration object.  If a pool has no RBD images
 configured for iSCSI access, that pool will not have a configuration object.
-
+The 
+.B lrbd.conf
+contains four sections: pools, authentication, targets and portals.
+.PP
 All configuration settings are stored in extended attributes.  The extended 
 attributes are 
-.B _target,
-.B hostname,
-.B target,
-.B _hostname
+.B targets,
+.B portals,
+.I hostname,
+.I target,
+.I _hostname
 and
-.B _target.
-The leading underscores prevent name collisions with potential hostnames.  
-.PP
-The 
-.B hostname
-and
-.B target
-extended attributes contain the pool configuration.  
+.I _target.
+The hostname and target extended attributes contain the pool configuration.  
 .SS POOLS
 Ceph pools may contain objects and RBD images.  An RBD image can be mounted
 to a gateway host, shared via an iSCSI target and accessed by an iSCSI 
@@ -41,42 +39,42 @@ portals. The following JSON structure represents the pool configuration:
 .RS 2
 {
 .RS 2
-"gateways: [ 
+"pool":  
+.I pool_name
+,
+.RS 0
+"gateways": [ 
 .RS 2
 {
 .RS 2
-"host": 
-.I hostname,
+"host|target": 
+.I hostname|target
+,
 .RS 0
-"images": [ 
+"tpg": [ 
 .RS 2
 {
 .RS 2
 "image": 
-.I image_name,
+.I image_name
+,
+.RS 0
+"portal": 
+.I portal_group
+,
 .RS 0
 "iqn":
 .I initiator_iqn
 .RE
 .RE
-}, ... 
-.RE
-],
-.RE
-"portals": [ 
-.RS 2
-{
-.RS 2
-"portal": 
-.I ip_address
 .RE
 }, ... 
 .RE
 ],
+.RE
 .RE
 }, ...
 .RE
-],
 .RE
 } 
 .RE
@@ -84,13 +82,13 @@ portals. The following JSON structure represents the pool configuration:
 .SS AUTHENTICATION
 Since gateways may have different security requirements, configurations
 for authentication are tied to each host and target.  The 
-.B _host
+.I _host
 and
-.B _target
+.I _target
 extended attributes store the authentication configuration and credentials.
 A gateway host will only read the relevant entries.  These entries are
 combined under a common structure named 
-.B _auth.
+.B auth.
 .PP
 Authentication for iSCSI is flexible.  Authentication may be absent or disabled,
 have common credentials from all initiators to a gateway target or have 
@@ -100,37 +98,43 @@ of targets on a gateway with proper credentials.  Lastly, iSCSI supports
 mutual authentication mandating that a gateway target must authenticate 
 itself to an initiator.  All methods support mutual athentication.
 .PP
-Many of the authentication sections may be absent or present, but disabled.
+Many of the authentication sections may be absent, or present but disabled.
 This allows for quick experimentation prior to finalizing a production
 configuration.  The following JSON structure represents the entire
 authentication configuration:
 .PP
 .RS 2
-"_auth": [
+"auth": [
 .RS 2
 {
 .RS 2
 "host|target":
-.I hostname|target_iqn,
+.I hostname|target_iqn
+,
 .RS 0
 "authentication":
-.I none|tpg|acls,
+.I none|tpg|acls
+,
 .RS 0
 "tpg": {
 .RS 2
 "userid": 
-.I initiator_userid,
+.I initiator_userid
+,
 .RS 0
 "password",
-.I initiator_password,
+.I initiator_password
+,
 .RE
 .RS 0
 "mutual":
-.I enable|disable,
+.I enable|disable
+,
 .RE
 .RS 0
 "userid_mutual":
-.I target_userid,
+.I target_userid
+,
 .RE
 .RS 0
 "password_mutual":
@@ -143,22 +147,27 @@ authentication configuration:
 {
 .RS 2
 "iqn": 
-.I initiator_iqn,
+.I initiator_iqn
+,
 .RS 0
 "userid": 
-.I initiator_userid,
+.I initiator_userid
+,
 .RE
 .RS 0
 "password",
-.I initiator_password,
+.I initiator_password
+,
 .RE
 .RS 0
 "mutual":
-.I enable|disable,
+.I enable|disable
+,
 .RE
 .RS 0
 "userid_mutual":
-.I target_userid,
+.I target_userid
+,
 .RE
 .RS 0
 "password_mutual":
@@ -172,21 +181,26 @@ authentication configuration:
 "discovery": {
 .RS 2
 "auth": 
-.I enable|disable,
+.I enable|disable
+,
 .RS 0
 "userid": 
-.I initiator_userid,
+.I initiator_userid
+,
 .RS 0
 "password",
-.I initiator_password,
+.I initiator_password
+,
 .RE
 .RS 0
 "mutual":
-.I enable|disable,
+.I enable|disable
+,
 .RE
 .RS 0
 "userid_mutual":
-.I target_userid,
+.I target_userid
+,
 .RE
 .RS 0
 "password_mutual":
@@ -206,42 +220,107 @@ authentication configuration:
 ]
 
 .SS TARGETS
-The target section is optional, but only recommended for demonstrations and
-investigations.  Without a static iqn, a target will change between 
-reconfigurations including reboots.
+The target section is optional, but required for environments needing 
+static iqns.  Dynamically generated values are only suitable for demonstrations.
+Generate static values with
+.BR iscsi-name (5). 
 .PP
 The target structure is stored in the extended attribute
-.B _target
+.B targets
 and is the simplest.  A target is associated with a host or group of hosts
 as shown below:
 .PP
 .RS 2
-"_target": [
+"target": [
 .RS 2
 {
 .RS 2
 "host|hosts":
-.I hostname|[host1, host2, ... ],
+.I hostname|[host1, host2, ... ]
+,
 .RS 0
 "iqn":
-.I target_iqn,
+.I target_iqn
+,
 .RE
 .RE
 }, ...
 .RE
 ]
 .RE
-.SS REDUNDANCY
-
-.SH EXAMPLES
+.SS Portals
+The portal section contains named groups of addresses.  Within a pool 
+configuration, a tpg section references a portal group.  Multiple
+addresses provide redundancy on a single gateway or across multiple gateways.
+The names of the groups are arbitrary and can be set to anything meaningful.
+.PP
+Any addresses not available on a host are placed in a separate TPG.  This 
+remote TPG is disabled, but will advertise all the addresses for a given
+target.  This is how high availability can be achieved for an iSCSI initiator
+across multiple gateways.
+.PP
+The portal structure is stored in the extended attribute
+.B portals.
+A portal has a name and a group of addresses.  A single address is permitted.
+An address may contain a port delimited by space, such as "192.168.1.100 3261".
+.PP
+.RS 2
+"portals": [
+.RS 2
+{
+.RS 2
+"name":
+.I portal_name
+,
+.RS 0
+"addresses": [
+.RS 2
+.I address
+, ...
+.RE
+], ...
+.RE
+.RE
+}
+.RE
+]
+.RE
+.SH INTERACTION WITH TARGET SERVICE
+The target service restores a local, saved configuration when enabled.  The
+target service is unnecessary for the lrbd service since the configuration
+is saved within Ceph.  If all storage for iSCSI access is within Ceph, the
+target service should be disabled.
+.PP
+With care, both services can be enabled applying both a static configuration 
+of local storage and the dynamically applied configuration from Ceph.  Systemd
+will start the target service and apply any configuration saved via
+.B targetcli saveconfig.
+Then, the lrbd service will apply its configuration potentially overwriting
+any shared sections.  Authentication would be the most likely cause of 
+conflict.
+.PP
+To eliminate the chance of conflict, any locally saved configuration should use
+a unique target.  Additionally, avoid saving the dynamic configuration locally.
+Also, realize that clearing the configuration by stopping the 
+.B target.service
+or running 
+.B lrbd -C 
+will remove all configuration applied from either method.
+.SH CAVEATS
+The configuration is validated syntactically only.  It's quite possible to
+overcomplicate a configuration unnecessarily by creating multiple targets or
+tpgs when fewer are needed.
 .RE
 .SH FILES
-.I /etc/sysconfig/lrbd
+.I /usr/share/doc/packages/lrbd/samples/*
+
 .RS
-The environment file for customizing options for the lrbd.service
+Several example configurations.  Portions of sections may be combined into
+a desriable configuration.
 .RE
 .SH AUTHOR
 Eric Jackson <ejackson@suse.com>
 .SH "SEE ALSO"
 .BR lrbd.conf (5),
 .BR targetcli (8),
+.BR iscsi-name (5),
