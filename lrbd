@@ -107,13 +107,15 @@ def iqn(entry):
 def addresses():
     """
     Return a list of all ip addresses 
-    TODO: add IPv6
     """
     adds = []
     for interface in netifaces.interfaces():
         addrs = netifaces.ifaddresses(interface)
         for entry in addrs[netifaces.AF_INET]:
             adds.append(entry['addr'])
+        for entry in addrs[netifaces.AF_INET6]:
+            # Strip interface
+            adds.append(re.split("%", entry['addr'])[0])
     return(adds)
 
 def uniq(cmds):
@@ -703,9 +705,14 @@ class Configs:
                 continue
 
             p.add(pool)
-            t.add(json.loads(ioctx.get_xattr(self.config_name, 'targets')))
-            pt.add(json.loads(ioctx.get_xattr(self.config_name, 'portals')))
-
+            try:
+                t.add(json.loads(ioctx.get_xattr(self.config_name, 'targets')))
+            except rados.NoData, e:
+                pass
+            try:
+                pt.add(json.loads(ioctx.get_xattr(self.config_name, 'portals')))
+            except rados.NoData, e:
+                pass
             
             if filter:
                 targets = t.list()
@@ -935,10 +942,11 @@ class TPGs:
                             self.tpg[target] = 1
                         if not target in self.portals:
                             self.portals[target] = {}
-                        if not 'portal' in entry:
-                            print "ERROR: portal missing from pool {}".format(pool)
-                            exit(1)
-                        if not entry['portal'] in self.portals[target]:
+                        #if not 'portal' in entry:
+                        #    print "ERROR: portal missing from pool {}".format(pool)
+                        #    exit(1)
+                        if ('portal' in entry and 
+                            not entry['portal'] in self.portals[target]):
                             self.portals[target][entry['portal']] = self.tpg[target]
                             self.tpg[target] += 1 
                             self.cmds.append(self._cmd(target, 
@@ -1092,7 +1100,10 @@ class Luns:
                     for entry in gentry['tpg']:
                         if not entry['image'] in self.luns:
                             target = iqn(gentry)
-                            tpg = Runtime.config['portals'][target][entry['portal']]
+                            if 'portal' in entry:
+                                tpg = Runtime.config['portals'][target][entry['portal']]
+                            else:
+                                tpg = 1
                             self._cmd(target, tpg, entry['image'])
                 
     def _find(self):
@@ -1149,7 +1160,10 @@ class Map:
                 for gentry in pentry['gateways']:
                     for entry in gentry['tpg']:
                         target = iqn(gentry)
-                        tpg = Runtime.config['portals'][target][entry['portal']]
+                        if 'portal' in entry:
+                            tpg = Runtime.config['portals'][target][entry['portal']]
+                        else:
+                            tpg = 1
                         lun = self._lun(target, tpg, entry['image'])
                         self._cmd(target, tpg, entry['initiator'], lun)
               
@@ -1217,7 +1231,10 @@ class Acls:
                     for entry in gentry['tpg']:
                         if not entry['initiator'] in self.initiators:
                             target = iqn(gentry)
-                            tpg = Runtime.config['portals'][target][entry['portal']]
+                            if 'portal' in entry:
+                                tpg = Runtime.config['portals'][target][entry['portal']]
+                            else:
+                                tpg = 1
                             self._cmd(target, tpg, entry['initiator'])
                             for poentry in Common.config['portals']:
                                 if (poentry['name'] == entry['portal']):
