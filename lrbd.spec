@@ -47,11 +47,13 @@ applying targetcli commands to a host.
 mkdir -p %{buildroot}/var/adm/fillup-templates
 mkdir -p %{buildroot}%{_unitdir}
 mkdir -p %{buildroot}%{_docdir}/%{name}/samples
+mkdir -p %{buildroot}%{_mandir}/man5
 mkdir -p %{buildroot}%{_mandir}/man8
 mkdir -p %{buildroot}%{_sbindir}
 
 cd lrbd
 install -m 555 lrbd %{buildroot}%{_sbindir}
+install -m 644 man/lrbd.conf.5.gz %{buildroot}%{_mandir}/man5
 install -m 644 man/lrbd.8.gz %{buildroot}%{_mandir}/man8
 
 install -m 644 sysconfig/lrbd %{buildroot}/var/adm/fillup-templates/sysconfig.lrbd
@@ -96,6 +98,7 @@ rm -rf $RPM_BUILD_ROOT
 /var/adm/fillup-templates/sysconfig.lrbd
 %{_sbindir}/lrbd
 %{_sbindir}/rclrbd
+%{_mandir}/man5/lrbd.conf.5.gz
 %{_mandir}/man8/lrbd.8.gz
 %{_unitdir}/lrbd.service
 %dir %attr(-, root, root) %{_docdir}/%{name}
