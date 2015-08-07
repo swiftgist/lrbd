@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 0.9.3
+Version: 0.9.4
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
@@ -69,6 +69,7 @@ install -m 644 samples/acls+mutual.json  %{_samples}
 install -m 644 samples/complete.json  %{_samples}
 install -m 644 samples/no_authentication+explicit.json  %{_samples}
 install -m 644 samples/no_authentication.json  %{_samples}
+install -m 644 samples/simple.json  %{_samples}
 install -m 644 samples/tpg+discovery.json  %{_samples}
 install -m 644 samples/tpg+discovery+mutual.json  %{_samples}
 install -m 644 samples/tpg.json  %{_samples}
