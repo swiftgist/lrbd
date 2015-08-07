@@ -1236,6 +1236,9 @@ class Acls:
             if 'gateways' in pentry:
                 for gentry in pentry['gateways']:
                     for entry in gentry['tpg']:
+                        if not 'initiator' in entry:
+                            print "ERROR: initiator missing from host {}".format(gentry['host'])
+                            exit(1)
                         if not entry['initiator'] in self.initiators:
                             target = iqn(gentry)
                             if 'portal' in entry:

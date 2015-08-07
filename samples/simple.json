@@ -2,7 +2,7 @@
     "target": [
       {
         "host": "igw1",
-        "iqn": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.abcdefghijk"
+        "target": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.abcdefghijk"
       }
     ],
     "auth": [
@@ -34,7 +34,7 @@
                         {
                             "portal": "portal1",
                             "image": "archive",
-                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
                         }
                     ]
                 } 
