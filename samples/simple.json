@@ -1,0 +1,44 @@
+{
+    "target": [
+      {
+        "host": "igw1",
+        "iqn": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.abcdefghijk"
+      }
+    ],
+    "auth": [
+        {
+            "host": "igw1", 
+            "authentication": "tpg", 
+            "tpg": {
+                "userid": "common2", 
+                "password": "pass1", 
+                "mutual": "enable", 
+                "userid_mutual": "target2",
+                "password_mutual": "pass2" 
+            }
+        } 
+    ], 
+    "portals": [
+        {
+            "name": "portal1",
+            "addresses": [ "172.16.1.16" ]
+        }
+    ],
+    "pools": [
+        {
+            "pool": "rbd",
+            "gateways": [
+                {
+                    "host": "igw1", 
+                    "tpg": [
+                        {
+                            "portal": "portal1",
+                            "image": "archive",
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                        }
+                    ]
+                } 
+            ] 
+        }
+    ]
+}

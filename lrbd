@@ -111,11 +111,15 @@ def addresses():
     adds = []
     for interface in netifaces.interfaces():
         addrs = netifaces.ifaddresses(interface)
-        for entry in addrs[netifaces.AF_INET]:
-            adds.append(entry['addr'])
-        for entry in addrs[netifaces.AF_INET6]:
-            # Strip interface
-            adds.append(re.split("%", entry['addr'])[0])
+        try:
+            for entry in addrs[netifaces.AF_INET]:
+                adds.append(entry['addr'])
+            for entry in addrs[netifaces.AF_INET6]:
+                # Strip interface
+                adds.append(re.split("%", entry['addr'])[0])
+        except KeyError, e:
+            # skip downed interfaces
+            pass
     return(adds)
 
 def uniq(cmds):
@@ -1039,9 +1043,12 @@ class Portals:
         self.luns = []
         self.pools = Common.config['pools']
 
-        if 'portals' in Common.config:
+        if 'portals' in Common.config and Common.config['portals']:
             for target in Runtime.config['portals'].keys():
                 for portal in Runtime.config['portals'][target]:
+                    if not Common.config['portals']:
+                        print "ERROR: portal {} missing from portals section".format(portal)
+                        exit(1)
                     for entry in Common.config['portals']:
                         if entry['name'] == portal:
                             for address in entry['addresses']:
@@ -1056,7 +1063,7 @@ class Portals:
                                          Runtime.config['remote'][target], 
                                          address)
         else:
-            _cmd(iqn({}), "1", "")
+            self._cmd(iqn({}), "1", "")
                         
 
     def _cmd(self, target, tpg, address):
@@ -1588,15 +1595,20 @@ def main(args):
         configs.wipe()
     elif (args.clear):
         configs.clear()
-        if (args.umount):
+        if (args.unmap):
             images = Images()
             images.unmap()
-    elif (args.umount):
+    elif (args.unmap):
         images = Images()
         images.unmap()
-    elif (args.input):
+    elif (args.file):
+        configs.wipe()
         content = Content()
-        content.read(args.input)
+        content.read(args.file)
+        content.save()
+    elif (args.add):
+        content = Content()
+        content.read(args.add)
         content.save()
     elif (args.output):
         configs.retrieve()
@@ -1640,21 +1652,23 @@ if __name__ == "__main__":
     parser.add_argument('-e', '--edit', action='store_true', dest='edit', default=False,
                     help='edit the rbd configuration for iSCSI')
     parser.add_argument('-E', '--editor', action='store', dest='editor',
-                    help='use EDITOR to edit the rbd configuration for iSCSI')
+                    help='use editor to edit the rbd configuration for iSCSI', metavar='editor')
     parser.add_argument('-c', '--config', action='store', dest='config',
-                    help='use CONFIG for object, defaults to "lrbd.conf"')
+                    help='use name for object, defaults to "lrbd.conf"', metavar='name')
     parser.add_argument('--ceph', action='store', dest='ceph',
-                    help='specify the ceph configuration file')
+                    help='specify the ceph configuration file', metavar='ceph')
     parser.add_argument('-H', '--host', action='store', dest='host',
-                    help='specify the hostname, defaults to "{}"'.format(socket.gethostname()))
+                    help='specify the hostname, defaults to "{}"'.format(socket.gethostname()), metavar='host')
     parser.add_argument('-o', '--output', action='store_true', dest='output', 
                     help='display the configuration')
     parser.add_argument('-l', '--local', action='store_true', dest='local', 
                     help='display the host configuration')
-    parser.add_argument('-f', '--file', action='store', dest='input', 
-                    help='apply the configuration from INPUT')
-    parser.add_argument('-u', '--umount', action='store_true', dest='umount', 
-                    help='unmount the rbd images')
+    parser.add_argument('-f', '--file', action='store', dest='file', 
+                    help='import the configuration from file', metavar='file')
+    parser.add_argument('-a', '--add', action='store', dest='add', 
+                    help='add the configuration from file', metavar='file')
+    parser.add_argument('-u', '--unmap', action='store_true', dest='unmap', 
+                    help='unmap the rbd images')
     parser.add_argument('-W', '--wipe', action='store_true', dest='wipe', 
                     help='wipe the configuration objects from all pools')
     parser.add_argument('-C', '--clear', action='store_true', dest='clear', 

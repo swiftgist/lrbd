@@ -21,30 +21,35 @@ The options are as follows:
 edit the global configuration.  If the EDITOR environment variable is set, uses the specified editor.
 .RE
 .PP 
-\-E EDITOR, \-\-edit EDITOR
+\-E editor, \-\-edit editor
 .RS 4
 edit the global configuration with the program specified.
 .RE
 .PP 
-\-c CONFIG, \-\-config CONFIG
+\-c name, \-\-config name
 .RS 4
-set the configuration object name in Ceph to CONFIG.  The default is 
+sets the object name in Ceph to name.  The default is 
 .IR lrbd.conf 
 .RE
 .PP
-\-\-ceph CEPH
+\-\-ceph ceph
 .RS 4
 set the Ceph configuration file.  The default is /etc/ceph/ceph.conf.
 .RE
 .PP
-\-H HOST, \-\-host HOST
+\-H host, \-\-host host
 .RS 4
 specify the hostname which defaults to gethostname(). 
 .RE
 .PP
-\-f INPUT, \-\-file INPUT
+\-f file, \-\-file file
 .RS 4
 import the configuration from a file
+.RE
+.PP
+\-a file, \-\-add file
+.RS 4
+add the configuration from a file
 .RE
 .PP
 \-o, \-\-output
@@ -57,9 +62,9 @@ display the global configuration
 display the host configuration
 .RE
 .PP
-\-u, \-\-umount
+\-u, \-\-unmap
 .RS 4
-unmount the rbd images.  Images in use will fail to unmount.
+unmap the rbd images.  Images in use will fail to unmap.
 .RE
 .PP
 \-W, \-\-wipe
