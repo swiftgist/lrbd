@@ -27,7 +27,8 @@ import pprint
 from collections import defaultdict
 import os.path
 import netifaces
-
+from collections import OrderedDict
+from functools import wraps
 
 # CONFIGFS target path
 TARGET="/sys/kernel/config/target"
@@ -39,7 +40,6 @@ def popen(cmd):
  
         cmd - an array of strings of the command
     """
-
     print " ".join(cmd)
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     for line in proc.stdout:
@@ -134,11 +134,24 @@ def uniq(cmds):
         c.append(k.split())
     return(c)
 
+def skip_missing(func):
+    """
+    decorator for exception handling
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except rados.NoData, e:
+            pass
+    return wrapper
+
+
 class Common:
     """
     Sharing common static configurations. 
     """
-    config = {}
+    config = OrderedDict()
 
 class Runtime:
     """
@@ -146,6 +159,10 @@ class Runtime:
     """
     config = {}
 
+    @staticmethod
+    def tpg(target, entry):
+        return(Runtime.config['portals'][target][entry['portal']] 
+                    if 'portal' in entry else 1)
 
 class Content:
     """
@@ -169,17 +186,14 @@ class Content:
             editor - specify another editor, defaults to vim
         """
         self.current = Common.config
-        if (editor == None):
-            EDITOR = os.environ.get('EDITOR', '/usr/bin/vim') 
-        else:
-            EDITOR = editor
-
+        EDITOR = editor if editor else os.environ.get('EDITOR', 
+                                                   '/usr/bin/vim')
         if (not self.current['auth'] and 
             not self.current['targets'] and
             not self.current['pools']):
             initial_message = self.instructions()
         else:
-            initial_message = json.dumps(self.current, indent=2, sort_keys=True)
+            initial_message = json.dumps(self.current, indent=2)
 
         with tempfile.NamedTemporaryFile(suffix=".tmp") as tmpfile:
             tmpfile.write(initial_message)
@@ -197,7 +211,7 @@ class Content:
                     except KeyboardInterrupt, e:
                         print "\nBye"
                         exit(1)
-            self.submitted = json.loads(submitted)
+            self.submitted = json.loads(submitted, object_pairs_hook=OrderedDict)
 
     def instructions(self):
         """
@@ -249,7 +263,7 @@ class Content:
             exit(1) 
         text = strip_comments(open(file).read())
         if (self.validate(text) and self.verify_mandatory_keys(text)):
-               self.submitted = json.loads(text)
+               self.submitted = json.loads(text, object_pairs_hook=OrderedDict)
         else:
             print "ERROR: file {} failed validation".format(file)
             exit(1)
@@ -320,21 +334,24 @@ class Content:
             <target>  - pool information for redundant target
         """
         if self.submitted != self.current:
-            self.attr = Attributes() 
-            self._remove_absent_entry()
-            self._remove_absent_auth()
+            conn = Cluster()
+            with conn as cluster:
+                self.attr = Attributes(cluster) 
+                self._remove_absent_entry()
+                self._remove_absent_auth()
 
-                    
-            for pool in self.submitted['pools']: 
-                for gateway in pool['gateways']:
-                    self._write_host(pool, gateway)
-                    self._write_target(pool, gateway)
-                if 'auth' in self.submitted:
-                    self._write_auth(pool)
-                if 'targets' in self.submitted:
-                    self._write_targets(pool)
-                if 'portals' in self.submitted:
-                    self._write_portals(pool)
+                        
+                for pool in self.submitted['pools']: 
+                    if 'gateways' in pool:
+                        for gateway in pool['gateways']:
+                            self._write_host(pool, gateway)
+                            self._write_target(pool, gateway)
+                    if 'auth' in self.submitted:
+                        self._write_auth(pool)
+                    if 'targets' in self.submitted:
+                        self._write_targets(pool)
+                    if 'portals' in self.submitted:
+                        self._write_portals(pool)
 
 
     def _remove_absent_entry(self):
@@ -347,21 +364,22 @@ class Content:
             for pool in self.current['pools']: 
                 hosts[pool['pool']] = []
                 # Add current gateways
-                for gateway in pool['gateways']:
-                    if 'host' in gateway:
-                        hosts[pool['pool']].append(gateway['host'])
-                    if 'target' in gateway:
-                        print "Adding target: ", gateway['target']
-                        hosts[pool['pool']].append(gateway['target'])
+                if 'gateways' in pool:
+                    for gateway in pool['gateways']:
+                        if 'host' in gateway:
+                            hosts[pool['pool']].append(gateway['host'])
+                        if 'target' in gateway:
+                            hosts[pool['pool']].append(gateway['target'])
             for pool in self.submitted['pools']: 
                 # Subtract submitted gateways, skip new entries
-                for gateway in pool['gateways']:
-                    if ('host' in gateway and
-                        gateway['host'] in hosts[pool['pool']]):
-                        hosts[pool['pool']].remove(gateway['host'])
-                    if ('target' in gateway and 
-                        gateway['target'] in hosts[pool['pool']]):
-                        hosts[pool['pool']].remove(gateway['target'])
+                if 'gateways' in pool:
+                    for gateway in pool['gateways']:
+                        if ('host' in gateway and
+                            gateway['host'] in hosts[pool['pool']]):
+                            hosts[pool['pool']].remove(gateway['host'])
+                        if ('target' in gateway and 
+                            gateway['target'] in hosts[pool['pool']]):
+                            hosts[pool['pool']].remove(gateway['target'])
                 # Remove difference
                 for host in hosts[pool['pool']]:
                     self.attr.remove(str(pool['pool']), str(host))
@@ -421,13 +439,71 @@ class Content:
         self.attr.write(str(pool['pool']), 
             str('portals'), json.dumps(self.submitted['portals']))
 
-class Attributes:
+class Cluster:
     """
-    Methods for updating and removing extended attributes within Ceph.
-    TODO: Rethink the connect/shutdown
+    Support 'with' for Rados connections
     """
 
     def __init__(self):
+        """
+        Capture pool name
+        """
+        self.cluster = None
+
+    def __enter__(self):
+        """
+        Connect to Ceph, return connection
+        """
+        self.cluster = rados.Rados(conffile=Common.ceph_conf)
+        try:
+            self.cluster.connect()
+        except rados.ObjectNotFound, e:
+            print "ERROR: check for missing keyring"
+            exit(1)
+        return(self.cluster)
+
+    def __exit__(self, exc_ty, exc_val, tb):
+        """
+        Close connection
+        """
+        self.cluster.shutdown()
+
+class Ioctx:
+    """
+    Support 'with' for pool connections
+    """
+
+    def __init__(self, cluster, pool):
+        """
+        Capture pool name
+        """
+        self.cluster = cluster
+        self.ioctx = None
+        self.pool = pool
+
+    def __enter__(self):
+        """
+        Connect to Ceph, open pool, return connection
+        """
+        try:
+            self.ioctx = self.cluster.open_ioctx(self.pool)
+        except rados.ObjectNotFound, e:
+            raise RuntimeError("pool '{}' does not exist".format(self.pool))
+        return(self.ioctx)
+
+    def __exit__(self, exc_ty, exc_val, tb):
+        """
+        Close connection, close pool
+        """
+        self.ioctx.close()
+
+class Attributes:
+    """
+    Methods for updating and removing extended attributes within Ceph.
+    """
+
+    def __init__(self, cluster):
+        self.cluster = cluster
         pass
 
     def write(self, pool, key, attrs):
@@ -438,17 +514,10 @@ class Attributes:
             key - a string, name of gateway host or target
             attrs - a string, json format
         """
-        cluster = rados.Rados(conffile=Common.ceph_conf)
-        cluster.connect()
-        try:
-            ioctx = cluster.open_ioctx(pool)
-        except rados.ObjectNotFound, e:
-            print "ERROR: pool '{}' does not exist".format(pool)
-            exit(1)
-        ioctx.write_full(Common.config_name, "")
-        ioctx.set_xattr(Common.config_name, key, attrs)
-        ioctx.close()
-        cluster.shutdown()
+        conn = Ioctx(self.cluster, pool)
+        with conn as ioctx:
+            ioctx.write_full(Common.config_name, "")
+            ioctx.set_xattr(Common.config_name, key, attrs)
 
     def remove(self, pool, attr):
         """
@@ -458,12 +527,9 @@ class Attributes:
             pool - a string, name of Ceph pool
             attr - a string, name of gateway host
         """
-        cluster = rados.Rados(conffile=Common.ceph_conf)
-        cluster.connect()
-        ioctx = cluster.open_ioctx(pool)
-        ioctx.rm_xattr(Common.config_name, attr)
-        ioctx.close()
-        cluster.shutdown()
+        conn = Ioctx(self.cluster, pool)
+        with conn as ioctx:
+            ioctx.rm_xattr(Common.config_name, attr)
 
     def remove_auth(self, pool):
         """
@@ -471,15 +537,11 @@ class Attributes:
 
             pool - a string, name of Ceph pool
         """
-        cluster = rados.Rados(conffile=Common.ceph_conf)
-        cluster.connect()
-        ioctx = cluster.open_ioctx(pool)
-        for key, value in ioctx.get_xattrs(Common.config_name):
-            #if (key[0] == "_" and not key == "_target"):
-            if (key[0] == "_"):
-                ioctx.rm_xattr(Common.config_name, key)
-        ioctx.close()
-        cluster.shutdown()
+        conn = Ioctx(self.cluster, pool)
+        with conn as ioctx:
+            for key, value in ioctx.get_xattrs(Common.config_name):
+                if (key[0] == "_"):
+                    ioctx.rm_xattr(Common.config_name, key)
 
 
 class Pools:
@@ -500,7 +562,7 @@ class Pools:
         
             item - dict (e.g. "pool": "swimming")
         """
-        self.pools.append({})
+        self.pools.append(OrderedDict())
         self.pools[-1]['pool'] = item
 
     def append(self, key, item):
@@ -537,7 +599,7 @@ class PortalSection:
         Add entire structure, identical copies are stored in each pool so 
         only one is needed.
         """
-        if not self.portals:
+        if not self.portals and item:
             self.portals.extend(item)
 
     def display(self):
@@ -563,7 +625,7 @@ class Targets:
         Add entire structure, identical copies are stored in each pool so 
         only one is needed.
         """
-        if not self.targets:
+        if not self.targets and item:
             self.targets.extend(item)
 
     def display(self):
@@ -601,7 +663,7 @@ class Authentications:
     """
     Manages the authentication section under the extended attribute auth.
     This section is optional, but relates to gateways and targets 
-    independently.  Authentication can none, tpg (common credentials) or
+    independently.  Authentication can be none, tpg (common credentials) or
     acls (host specific credentials).
     """
 
@@ -658,24 +720,15 @@ class Configs:
             ceph_conf - an alternative Ceph configuration file
             hostname - specify an alternative gateway host
         """
-        if (config_name == None):
-            self.config_name = "lrbd.conf"
-        else:
-            self.config_name = config_name
+        self.config_name = config_name if config_name else "lrbd.conf"
+        self.ceph_conf = ceph_conf if ceph_conf else "/etc/ceph/ceph.conf"
 
-        if (ceph_conf == None):
-            self.ceph_conf = "/etc/ceph/ceph.conf"
-        else:
-            self.ceph_conf = ceph_conf
 
         if not os.path.isfile(self.ceph_conf):
             print "ERROR: {} does not exist".format(self.ceph_conf)
             exit(1)
 
-        if (hostname == None):
-            self.hostname = socket.gethostname()
-        else:
-            self.hostname = hostname
+        self.hostname = hostname if hostname else socket.gethostname()
 
         Common.config_name = self.config_name
         Common.ceph_conf = self.ceph_conf
@@ -684,64 +737,81 @@ class Configs:
     def retrieve(self, filter=None):
         """
         Scan all configuration objects and build a structure containing
-        all gateway hosts.  Merge pools, auth and targets into Common.config 
+        all gateway hosts.  Merge pools, auth, portals and targets into 
+        Common.config 
         """
-        cluster = rados.Rados(conffile=self.ceph_conf)
+        conn = Cluster()
+        with conn as cluster:
+            p = Pools()
+            pt = PortalSection()
+            t = Targets()
+            a = Authentications()
 
-        try:
-            cluster.connect()
-        except rados.ObjectNotFound, e:
-            print "ERROR: check for missing keyring"
-            exit(1)
-    
-        p = Pools()
-        pt = PortalSection()
-        t = Targets()
-        a = Authentications()
+            for pool in cluster.list_pools():
+                conn = Ioctx(cluster, pool)
+                with conn as ioctx:
 
-        for pool in cluster.list_pools():
-            ioctx = cluster.open_ioctx(pool)
-            try:
-                ioctx.stat(self.config_name) # Check for object
-            except rados.ObjectNotFound, e:
-                # No configuration for pool, skipping
-                print "INFO: No configuration object {} in pool {}".format(self.config_name, pool)
-                continue
-
-            p.add(pool)
-            try:
-                t.add(json.loads(ioctx.get_xattr(self.config_name, 'targets')))
-            except rados.NoData, e:
-                pass
-            try:
-                pt.add(json.loads(ioctx.get_xattr(self.config_name, 'portals')))
-            except rados.NoData, e:
-                pass
-            
-            if filter:
-                targets = t.list()
-
-            attrs = ioctx.get_xattrs(self.config_name)
-            for key, value in attrs:
-                if key == "targets" or key == "portals":
-                    continue
-                elif key[0] == "_":
-                    a.add(json.loads(value))
-                else:
+                    if self._config_missing(ioctx, self.config_name, pool):
+                        continue
+                    p.add(pool)
+                    t.add(self._get_optional(ioctx, self.config_name, 'targets'))
+                    pt.add(self._get_optional(ioctx, self.config_name, 'portals'))
+                    
                     if filter:
-                        if (key in targets or key == self.hostname):
-                            p.append('gateways', json.loads(value))
-                    else:
-                        p.append('gateways', json.loads(value))
-            ioctx.close
-        cluster.shutdown()
+                        targets = t.list()
+
+                    attrs = ioctx.get_xattrs(self.config_name)
+                    for key, value in attrs:
+                        if key == "targets" or key == "portals":
+                            continue
+                        elif key[0] == "_":
+                            a.add(json.loads(value, 
+                                object_pairs_hook=OrderedDict))
+                        else:
+                            if filter:
+                                if (key in targets or key == self.hostname):
+                                    p.append('gateways', json.loads(value, 
+                                        object_pairs_hook=OrderedDict))
+                            else:
+                                p.append('gateways', json.loads(value, 
+                                    object_pairs_hook=OrderedDict))
+
         if filter:
             t.purge()
 
-        Common.config['pools'] = p.pools
         Common.config['auth'] = a.authentications
         Common.config['targets'] = t.targets
         Common.config['portals'] = pt.portals
+        Common.config['pools'] = p.pools
+
+    def _config_missing(self, ioctx, config_name, pool):
+        """
+        Check for configuration object
+
+            ioctx - existing pool connection
+            config_name - name of the configuration object
+            pool - name of pool
+        """
+        try:
+            ioctx.stat(config_name) # Check for object
+        except rados.ObjectNotFound, e:
+            # No configuration for pool, skipping
+            print "INFO: No configuration object {} in pool {}".format(self.config_name, pool)
+            return(True)
+        return(False)
+
+    def _get_optional(self, ioctx, config_name, attr):
+        """
+        Load value of specified attribute, may not exist
+
+            ioctx - existing pool connection
+            config_name - name of the configuration object
+            attr - key desired (e.g. 'targets' or 'portals')
+        """
+        try:
+            return(json.loads(ioctx.get_xattr(config_name, attr), object_pairs_hook=OrderedDict))
+        except rados.NoData, e:
+            pass
 
     def display(self):
         """
@@ -749,7 +819,7 @@ class Configs:
         format obnoxious when reviewing.  TODO: custom JSON output with
         keys sorted by significance.
         """
-        print json.dumps(Common.config, indent=4, sort_keys=True)
+        print json.dumps(Common.config, indent=4)
 
     def wipe(self):
         """
@@ -782,18 +852,19 @@ class Configs:
             popen(cmd)
 
 
-####################################################
-# 
-####################################################
-def tpg_entry(pentry):
+##########################################################################
+# Ideal spot for separating into another file.  All classes and functions
+# below change the host system.
+##########################################################################
+def entries():
     """
-    Generator, not as useful as I'd hoped
+    Generator yielding pool, gateway and tpg entries
     """
-    if 'gateways' in pentry:
-        for gentry in pentry['gateways']:
-            for entry in gentry['tpg']:
-                yield entry
-
+    for pentry in Common.config['pools']:
+        if 'gateways' in pentry:
+            for gentry in pentry['gateways']:
+                for entry in gentry['tpg']:
+                    yield (pentry, gentry, entry)
 
 class Images:
     """
@@ -817,12 +888,11 @@ class Images:
         Create the commands to map each rbd device
         """
         self.map_cmds = []
-        pools = Common.config['pools']
-        for pentry in Common.config['pools']:
-            for entry in tpg_entry(pentry):
-                if ":".join([ pentry['pool'], entry['image'] ]) in self.mounts.keys():
-                    continue
-                self.map_cmds.append([ "rbd", "-p", pentry['pool'], "map", entry['image'] ])
+        
+        for pentry, gentry, entry in entries():
+           if ":".join([ pentry['pool'], entry['image'] ]) in self.mounts.keys():
+               continue
+           self.map_cmds.append([ "rbd", "-p", pentry['pool'], "map", entry['image'] ])
 
         for cmd in self.map_cmds:
             popen(cmd)
@@ -845,14 +915,13 @@ class Backstores:
         Create commands for creating each backstore.  Skip existing. 
         """
         self.cmds = []
-        for pentry in Common.config['pools']:
-            for entry in tpg_entry(pentry):
-                cmd = [ "targetcli", "/backstores/iblock", "create", 
-                        "name={}".format(entry['image']), 
-                        "dev=/dev/rbd/{}/{}".format(pentry['pool'], entry['image']) ]
-                backstore = glob.glob(TARGET + "/core/iblock_*/{}".format(entry['image']))
-                if not backstore: 
-                    self.cmds.append(cmd)
+        for pentry, gentry, entry in entries():
+           cmd = [ "targetcli", "/backstores/iblock", "create", 
+                   "name={}".format(entry['image']), 
+                   "dev=/dev/rbd/{}/{}".format(pentry['pool'], entry['image']) ]
+           backstore = glob.glob(TARGET + "/core/iblock_*/{}".format(entry['image']))
+           if not backstore: 
+               self.cmds.append(cmd)
 
     def create(self):
         """
@@ -935,26 +1004,20 @@ class TPGs:
         Adds a TPG for each portal group.  Since iscsi.create() makes tpg1,
         skips that one naturally.
         """
-        for pentry in Common.config['pools']:
-            if 'gateways' in pentry:
-                for gentry in pentry['gateways']:
-                    for entry in gentry['tpg']:
-                        target = iqn(gentry)
-                        if not target in self.remote:
-                            self.remote[target] = None
-                        if not target in self.tpg:
-                            self.tpg[target] = 1
-                        if not target in self.portals:
-                            self.portals[target] = {}
-                        #if not 'portal' in entry:
-                        #    print "ERROR: portal missing from pool {}".format(pool)
-                        #    exit(1)
-                        if ('portal' in entry and 
-                            not entry['portal'] in self.portals[target]):
-                            self.portals[target][entry['portal']] = self.tpg[target]
-                            self.tpg[target] += 1 
-                            self.cmds.append(self._cmd(target, 
-                                             self.portals[target][entry['portal']]))
+        for pentry, gentry, entry in entries():
+            target = iqn(gentry)
+            if not target in self.remote:
+                self.remote[target] = None
+            if not target in self.tpg:
+                self.tpg[target] = 1
+            if not target in self.portals:
+                self.portals[target] = {}
+            if ('portal' in entry and 
+                not entry['portal'] in self.portals[target]):
+                self.portals[target][entry['portal']] = self.tpg[target]
+                self.tpg[target] += 1 
+                self.cmds.append(self._cmd(target, 
+                                 self.portals[target][entry['portal']]))
 
                     
     def _remote(self):
@@ -1038,33 +1101,42 @@ class Portals:
 
     def __init__(self):
         """
+        Build portal commands, assign address to correct TPG
         """
         self.cmds = []
         self.luns = []
         self.pools = Common.config['pools']
 
         if 'portals' in Common.config and Common.config['portals']:
-            for target in Runtime.config['portals'].keys():
-                for portal in Runtime.config['portals'][target]:
-                    if not Common.config['portals']:
-                        print "ERROR: portal {} missing from portals section".format(portal)
-                        exit(1)
-                    for entry in Common.config['portals']:
-                        if entry['name'] == portal:
-                            for address in entry['addresses']:
-                                # Strip Port 
-                                addr = re.split(" ", address)[0]
-                                if addr in Runtime.config['addresses']:
-                                    self._cmd(target, 
-                                         Runtime.config['portals'][target][portal], 
-                                         address)
-                                else:
-                                    self._cmd(target, 
-                                         Runtime.config['remote'][target], 
-                                         address)
+            for target, portal, entry in self._entries():
+                if entry['name'] == portal:
+                    for address in entry['addresses']:
+                        # Strip Port 
+                        addr = re.split(" ", address)[0]
+                        if addr in Runtime.config['addresses']:
+                            self._cmd(target, 
+                                 Runtime.config['portals'][target][portal], 
+                                 address)
+                        else:
+                            self._cmd(target, 
+                                 Runtime.config['remote'][target], 
+                                 address)
         else:
             self._cmd(iqn({}), "1", "")
                         
+
+    def _entries(self):
+        """
+        Generator
+        """
+        for target in Runtime.config['portals'].keys():
+            for portal in Runtime.config['portals'][target]:
+                if not Common.config['portals']:
+                    print "ERROR: portal {} missing from portals section".format(portal)
+                    exit(1)
+                for entry in Common.config['portals']:
+                    yield(target, portal, entry)
+
 
     def _cmd(self, target, tpg, address):
         """
@@ -1101,30 +1173,21 @@ class Luns:
                 
         self._find()
 
-        for pentry in Common.config['pools']:
-            if 'gateways' in pentry:
-                for gentry in pentry['gateways']:
-                    for entry in gentry['tpg']:
-                        if not entry['image'] in self.luns:
-                            target = iqn(gentry)
-                            if 'portal' in entry:
-                                tpg = Runtime.config['portals'][target][entry['portal']]
-                            else:
-                                tpg = 1
-                            self._cmd(target, tpg, entry['image'])
+        for pentry, gentry, entry in entries():
+            if not entry['image'] in self.luns:
+                target = iqn(gentry)
+                tpg = Runtime.tpg(target, entry)
+                self._cmd(target, tpg, entry['image'])
                 
     def _find(self):
         """
         Scan paths for existing luns and save lun name to list
         """
-        for pentry in Common.config['pools']:
-            if 'gateways' in pentry:
-                for gentry in pentry['gateways']:
-                    for entry in gentry['tpg']:
-                        udev_paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/lun/lun_*/*/udev_path".format(iqn(entry)))
-                        for udev_path in udev_paths:
-                            contents = open(udev_path).read()
-                            self.luns.append(basename(contents.rstrip('\n')))
+        for pentry, gentry, entry in entries():
+            udev_paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/lun/lun_*/*/udev_path".format(iqn(entry)))
+            for udev_path in udev_paths:
+                contents = open(udev_path).read()
+                self.luns.append(basename(contents.rstrip('\n')))
 
     def _cmd(self, target, tpg, image):
         """
@@ -1162,17 +1225,11 @@ class Map:
         self.luns = []
         self.pools = Common.config['pools']
 
-        for pentry in Common.config['pools']:
-            if 'gateways' in pentry:
-                for gentry in pentry['gateways']:
-                    for entry in gentry['tpg']:
-                        target = iqn(gentry)
-                        if 'portal' in entry:
-                            tpg = Runtime.config['portals'][target][entry['portal']]
-                        else:
-                            tpg = 1
-                        lun = self._lun(target, tpg, entry['image'])
-                        self._cmd(target, tpg, entry['initiator'], lun)
+        for pentry, gentry, entry in entries():
+            target = iqn(gentry)
+            tpg = Runtime.tpg(target, entry)
+            lun = self._lun(target, tpg, entry['image'])
+            self._cmd(target, tpg, entry['initiator'], lun)
               
 
     def _lun(self, target, tpg, image):
@@ -1232,27 +1289,21 @@ class Acls:
         self.initiators = []
 
         self._find()
-        for pentry in Common.config['pools']:
-            if 'gateways' in pentry:
-                for gentry in pentry['gateways']:
-                    for entry in gentry['tpg']:
-                        if not 'initiator' in entry:
-                            print "ERROR: initiator missing from host {}".format(gentry['host'])
-                            exit(1)
-                        if not entry['initiator'] in self.initiators:
-                            target = iqn(gentry)
-                            if 'portal' in entry:
-                                tpg = Runtime.config['portals'][target][entry['portal']]
-                            else:
-                                tpg = 1
-                            self._cmd(target, tpg, entry['initiator'])
-                            for poentry in Common.config['portals']:
-                                if (poentry['name'] == entry['portal']):
-                                    for address in poentry['addresses']:
-                                        addr = re.split(" ", address)[0]
-                                        if not addr in Runtime.config['addresses']:
-                                            tpg = Runtime.config['remote'][target]
-                                            self._cmd(target, tpg, entry['initiator'])
+        for pentry, gentry, entry in entries():
+            if not 'initiator' in entry:
+                print "ERROR: initiator missing from host {}".format(gentry['host'])
+                exit(1)
+            if not entry['initiator'] in self.initiators:
+                target = iqn(gentry)
+                tpg = Runtime.tpg(target, entry)
+                self._cmd(target, tpg, entry['initiator'])
+                for poentry in Common.config['portals']:
+                    if (poentry['name'] == entry['portal']):
+                        for address in poentry['addresses']:
+                            addr = re.split(" ", address)[0]
+                            if not addr in Runtime.config['addresses']:
+                                tpg = Runtime.config['remote'][target]
+                                self._cmd(target, tpg, entry['initiator'])
                     
     def _find(self):
         """
@@ -1298,7 +1349,6 @@ class Auth:
         if 'auth' in Common.config['auth']:
             for auth in Common.config['auth']:
                 self.target = iqn(auth)
-                print "auth: ", auth['authentication']
                 if auth['authentication'] == "none":
                     self.cmds.append(self.set_noauth(auth))
                 elif auth['authentication'] == "tpg":
@@ -1624,7 +1674,6 @@ def main(args):
     elif (args.local):
         configs.retrieve("host")
         configs.display()
-
     else:
         configs.retrieve("host")
         images = Images()
