@@ -1014,12 +1014,26 @@ class TPGs:
                 self.portals[target] = {}
             if ('portal' in entry and 
                 not entry['portal'] in self.portals[target]):
+                self._check_portal(entry['portal'])
                 self.portals[target][entry['portal']] = self.tpg[target]
                 self.tpg[target] += 1 
                 self.cmds.append(self._cmd(target, 
                                  self.portals[target][entry['portal']]))
 
                     
+    def _check_portal(self, name):
+        """
+        Check that the referenced portal is defined in portals
+        """
+        found = False
+        for entry in Common.config['portals']:
+            if name == entry['name']:
+                found = True
+                break
+        if not found:
+            print "ERROR: portal {} is missing from portals".format(name)
+            exit(1)
+
     def _remote(self):
         """
         Adds a TPG for holding remote gateway portals.  Checks each target.
@@ -1067,21 +1081,6 @@ class TPGs:
             return([ "targetcli", "/iscsi/{}".format(target), 
                          "create {}".format(tpg) ])
         return([])
-
-
-
-    def _addresses(self):
-        """
-        Return a list of all ip addresses 
-        TODO: add IPv6
-        """
-        adds = []
-        for interface in netifaces.interfaces():
-            addrs = netifaces.ifaddresses(interface)
-            for entry in addrs[netifaces.AF_INET]:
-                adds.append(entry['addr'])
-        return(adds)
-
 
     def create(self):
         """

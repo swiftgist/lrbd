@@ -1,0 +1,107 @@
+{
+    "targets": [
+      {
+        "host": "igw1",
+        "target": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.1a2b6ae09141"
+      },
+      {
+        "host": "igw2",
+        "target": "iqn.2003-01.org.linux-iscsi.igw2.x86:sn.b611a553e579"
+      }
+    ],
+    "auth": [
+        {
+            "host": "igw1", 
+            "authentication": "tpg", 
+            "tpg": {
+                "userid": "common2", 
+                "password": "pass1"
+            }
+        }, 
+        {
+            "host": "igw2", 
+            "authentication": "tpg", 
+            "tpg": {
+                "userid": "common1", 
+                "password": "pass1"
+            }
+        }
+    ], 
+    "portals": [
+        {
+            "name": "portal1",
+            "addresses": [ "172.16.1.16", "172.16.2.16" ]
+        },
+        {
+            "name": "portal2",
+            "addresses": [ "172.16.1.17", "172.16.2.17" ]
+        }
+    ],
+    "pools": [
+        {
+            "pool": "rbd",
+            "gateways": [
+                {
+                    "host": "igw1", 
+                    "tpg": [
+                        {
+                            "portal": "portal1",
+                            "image": "city",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                        }
+                    ]
+                }, 
+                {
+                    "host": "igw2", 
+                    "tpg": [
+                        {
+                            "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20", 
+                            "image": "writers"
+                        }, 
+                        {
+                            "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                            "image": "writers"
+                        }, 
+                        {
+                            "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                            "image": "wood"
+                        }
+                    ] 
+                }
+            ] 
+        },
+        {
+            "pool": "car",
+            "gateways": [
+                {
+                    "host": "igw1", 
+                    "tpg": [
+                        {
+                            "portal": "portal3",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                            "image": "cement"
+                        }
+                    ]
+                } 
+            ] 
+        },
+        {
+            "pool": "whirl",
+            "gateways": [
+                {
+                    "host": "igw2", 
+                    "tpg": [
+                        {
+                            "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                            "image": "mental"
+                        }
+                    ]
+                } 
+            ] 
+        }
+    ]
+}

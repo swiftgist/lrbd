@@ -1,0 +1,169 @@
+{
+    "_target": [
+      {
+        "host": "igw1",
+        "iqn": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.1a2b6ae09141"
+      },
+      {
+        "host": "igw2",
+        "iqn": "iqn.2003-01.org.linux-iscsi.igw2.x86:sn.b611a553e579"
+      }
+    ],
+    "_auth": [
+        {
+            "host": "igw1", 
+            "authentication": "tpg", 
+            "discovery": {
+                "auth": "enable", 
+                "userid": "common2", 
+                "password": "pass1", 
+                "mutual": "enable", 
+                "userid_mutual": "target2",
+                "password_mutual": "pass2" 
+            }, 
+            "tpg": {
+                "userid": "common2", 
+                "password": "pass1", 
+                "mutual": "enable", 
+                "userid_mutual": "target2",
+                "password_mutual": "pass2" 
+            },
+            "acls": [
+                {
+                    "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                    "userid": "initiator1", 
+                    "password": "pass1", 
+                    "mutual": "enable", 
+                    "userid_mutual": "target1",
+                    "password_mutual": "pass2"
+                }
+            ]
+        }, 
+        {
+            "host": "igw2", 
+            "authentication": "tpg", 
+            "discovery": {
+                "auth": "enable", 
+                "userid": "common1", 
+                "password": "pass1", 
+                "mutual": "enable", 
+                "userid_mutual": "target1",
+                "password_mutual": "pass2" 
+            }, 
+            "tpg": {
+                "userid": "common1", 
+                "password": "pass1", 
+                "mutual": "enable", 
+                "userid_mutual": "target1",
+                "password_mutual": "pass2" 
+            },
+            "acls": [
+                {
+                    "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                    "userid": "initiator1", 
+                    "password": "pass3", 
+                    "mutual": "enable", 
+                    "userid_mutual": "target2",
+                    "password_mutual": "pass4"
+                },
+                {
+                    "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                    "userid": "initiator2", 
+                    "password": "pass5", 
+                    "mutual": "enable", 
+                    "userid_mutual": "target2",
+                    "password_mutual": "pass6" 
+                } 
+            ] 
+        }
+    ], 
+    "pools": [
+        {
+            "pool": "rbd",
+            "gateways": [
+                {
+                    "images": [
+                        {
+                            "image": "city",
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                        }
+                    ],
+                    "portals": [
+                        {
+                            "portal": "172.16.1.16"
+                        }, 
+                        {
+                            "portal": "172.16.2.16"
+                        }
+                    ]
+                }, 
+                {
+                    "images": [
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20", 
+                            "image": "writers"
+                        }, 
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                            "image": "writers"
+                        }, 
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                            "image": "wood"
+                        }
+                    ], 
+                    "portals": [
+                        {
+                            "portal": "172.16.1.17"
+                        }, 
+                        {
+                            "portal": "172.16.2.17"
+                        }
+                    ]
+                }
+            ] 
+        },
+        {
+            "pool": "car",
+            "gateways": [
+                {
+                    "images": [
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                            "image": "cement"
+                        }
+                    ],
+                    "portals": [
+                        {
+                            "portal": "172.16.1.16"
+                        }, 
+                        {
+                            "portal": "172.16.2.16"
+                        }
+                    ]
+                } 
+            ] 
+        },
+        {
+            "pool": "whirl",
+            "gateways": [
+                {
+                    "images": [
+                        {
+                            "iqn": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                            "image": "mental"
+                        }
+                    ],
+                    "portals": [
+                        {
+                            "portal": "172.16.1.17"
+                        }, 
+                        {
+                            "portal": "172.16.2.17"
+                        }
+                    ]
+                } 
+            ] 
+        }
+    ]
+}

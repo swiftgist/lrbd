@@ -1,0 +1,1 @@
+These configurations will fail.  The config* will fail on importing (i.e. lrbd -f).  The runtime* will fail on applying the configuration (i.e. lrbd)

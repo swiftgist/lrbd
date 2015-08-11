@@ -1,0 +1,35 @@
+{
+    "targets": [
+      {
+        "host": "igw1",
+        "target": "iqn.2003-01.org.linux-iscsi.generic.x86:sn.abcdefghijk"
+      }
+    ],
+    "auth": [
+        {
+            "host": "igw1", 
+            "authentication": "tpg", 
+            "tpg": {
+                "userid": "common1", 
+                "password": "pass1"
+            }
+        } 
+    ], 
+    "pools": [
+        {
+            "pool": "rbd",
+            "gateways": [
+                {
+                    "host": "igw1", 
+                    "tpg": [
+                        {
+                            "portal": "portal1",
+                            "image": "archive",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                        }
+                    ]
+                } 
+            ] 
+        }
+    ]
+}
