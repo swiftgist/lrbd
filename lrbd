@@ -1053,19 +1053,19 @@ class TPGs:
                 
     def disable_remote(self):
         """
-        Disable TPG and enable discoverable_while_disabled.
+        Disable TPG and disable tpg_enabled_sendtargets.
         """
         for target in Runtime.config['remote'].keys():
             tpg = Runtime.config['remote'][target]
             if not tpg:
                 continue
-            path = TARGET + "/iscsi/{}/tpgt_{}/attrib/discoverable_while_disabled".format(target, tpg)
+            path = TARGET + "/iscsi/{}/tpgt_{}/attrib/tpg_enabled_sendtargets".format(target, tpg)
             if not os.path.isfile(path):
-                print "ERROR: discoverable_while_disabled unsupported, upgrade kernel"
+                print "ERROR: tpg_enabled_sendtargets unsupported, upgrade kernel to 3.12.46-102-default or higher"
                 exit(1)
-            dwd = open(path, "w")
-            dwd.write("1")
-            dwd.close()
+            tes = open(path, "w")
+            tes.write("0")
+            tes.close()
             tpg_path = TARGET + "/iscsi/{}/tpgt_{}/enable".format(target, tpg)
             enabled = open(tpg_path).read().rstrip('\n')
             if (enabled == "1"):

@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 0.9.5
+Version: 0.9.6
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
@@ -76,6 +76,12 @@ install -m 644 samples/tpg.json  %{_samples}
 install -m 644 samples/tpg+mutual+discovery.json  %{_samples}
 install -m 644 samples/tpg+mutual+discovery+mutual.json  %{_samples}
 install -m 644 samples/tpg+mutual.json  %{_samples}
+install -m 644 samples/2gateways+2images+no_authentication.json %{_samples}
+install -m 644 samples/2gateways+2portals+2images+isolated+no_authentication.json %{_samples}
+install -m 644 samples/2gateways+2portals+2images+no_authentication.json %{_samples}
+install -m 644 samples/2gateways+2portals+no_authentication.json %{_samples}
+install -m 644 samples/2gateways+no_authentication.json %{_samples}
+
 
 
 %pre
