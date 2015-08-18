@@ -23,11 +23,11 @@ For the impatient, follow the instructions for the simplest configuration of one
 1. Discover the target.  
 `# iscsiadm -m discovery -t st -p `*gateway_address*
 * Login  
-`# iscsiadm -m mode -p `*gateway_address*` --login`
+`# iscsiadm -m node -p `*gateway_address*` --login`
 * Find device   
 * Format, write data, read data
 * Logout  
-`# iscsiadm -m mode -p `*gateway_address*` --logout`
+`# iscsiadm -m node -p `*gateway_address*` --logout`
 
 ### From gateway
 1. From the gateway, clear the configuration  
