@@ -8,6 +8,7 @@ RemainAfterExit=yes
 EnvironmentFile=-/etc/sysconfig/lrbd
 ExecStart=/usr/sbin/lrbd $LRBD_OPTIONS
 ExecStop=/usr/sbin/lrbd -Cu
+ExecReload=/usr/sbin/lrbd 
 
 [Install]
 WantedBy=multi-user.target

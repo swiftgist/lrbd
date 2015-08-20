@@ -11,12 +11,40 @@
     ],
     "auth": [
         {
+            "host": "igw1", 
             "authentication": "acls", 
-            "host": "igw1" 
+            "acls": [
+                {
+                    "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                    "userid": "initiator1", 
+                    "password": "pass1", 
+                    "mutual": "enable", 
+                    "userid_mutual": "target1",
+                    "password_mutual": "pass2"
+                }
+            ]
         }, 
         {
+            "host": "igw2", 
             "authentication": "acls", 
-            "host": "igw2" 
+            "acls": [
+                {
+                    "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+                    "userid": "initiator1", 
+                    "password": "pass3", 
+                    "mutual": "enable", 
+                    "userid_mutual": "target2",
+                    "password_mutual": "pass4"
+                },
+                {
+                    "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
+                    "userid": "initiator2", 
+                    "password": "pass5", 
+                    "mutual": "enable", 
+                    "userid_mutual": "target2",
+                    "password_mutual": "pass6" 
+                } 
+            ] 
         }
     ], 
     "portals": [
