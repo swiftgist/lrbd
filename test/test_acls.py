@@ -24,8 +24,8 @@ class AclsTestCase(unittest.TestCase):
                 } ] 
 
         Runtime.config['addresses'] = [ "172.16.1.16" ]
-        Runtime.config['remote'] = {}
-        Runtime.config['remote']["iqn.xyz"] = "2"
+        #Runtime.config['remote'] = {}
+        #Runtime.config['remote']["iqn.xyz"] = "2"
         Runtime.config['portals'] = {}
         Runtime.config['portals']["iqn.xyz"] = {}
         Runtime.config['portals']["iqn.xyz"]["portal1"] = "1"
@@ -67,7 +67,7 @@ class AclsTestCase(unittest.TestCase):
 
     @mock.patch('glob.glob')
     def test_find(self, mock_subproc_glob):
-        mock_subproc_glob.return_value = [ "iqn.abc" ]
+        mock_subproc_glob.return_value = [ "/s/k/c/t/i/t/t_1/a/iqn.abc" ]
 
         class mock_Acls(Acls):
 
@@ -75,7 +75,7 @@ class AclsTestCase(unittest.TestCase):
                 self.called = " ".join([ target, str(tpg), initiator ])
 
         self.a = mock_Acls()
-        assert self.a.initiators == [ "iqn.abc" ]
+        assert self.a.exists == {'iqn.xyz': {'1': ['iqn.abc']}}
 
     @mock.patch('glob.glob')
     def test_find_does_nothing(self, mock_subproc_glob):
@@ -121,8 +121,8 @@ class AclsTestCase(unittest.TestCase):
                 } ] 
 
         Runtime.config['addresses'] = [ "172.16.1.16" ]
-        Runtime.config['remote'] = {}
-        Runtime.config['remote']["iqn.xyz"] = "2"
+        #Runtime.config['remote'] = {}
+        #Runtime.config['remote']["iqn.xyz"] = "2"
         Runtime.config['portals'] = {}
         Runtime.config['portals']["iqn.xyz"] = {}
         Runtime.config['portals']["iqn.xyz"]["portal1"] = "1"

@@ -15,7 +15,8 @@ class TargetsTestCase(unittest.TestCase):
         assert self.t.targets[0]['host'] == "igw1"
 
     def test_list(self):
-        data = [ { "hosts": [ "igw1", "igw2" ], "target": "iqn.xyz" } ]
+        data = [ { "hosts": [ { "host": "igw1"}, { "host": "igw2" } ], 
+                   "target": "iqn.xyz" } ]
         self.t.add(data)
         Common.hostname = "igw1"
         targets = self.t.list()

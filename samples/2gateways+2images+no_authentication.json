@@ -7,14 +7,21 @@
   ], 
   "targets": [
     {
-      "hosts": [ "igw1", "igw2" ],
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" }
+      ],
       "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
     }
   ], 
   "portals": [
       {
-          "name": "portal3",
-          "addresses": [ "172.16.1.16", "172.16.1.17" ]
+          "name": "portal1",
+          "addresses": [ "172.16.1.16" ]
+      },
+      {
+          "name": "portal2",
+          "addresses": [ "172.16.1.17" ]
       }
   ],
   "pools": [
@@ -25,12 +32,10 @@
           "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
           "tpg": [
             {
-              "portal": "portal3",
               "image": "city", 
               "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
             },
             {
-              "portal": "portal3",
               "image": "wood", 
               "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
             }

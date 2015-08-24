@@ -38,7 +38,7 @@ class LunsTestCase(unittest.TestCase):
                 self.called = " ".join([ target, str(tpg), address ])
 
         self.l = mock_Luns()
-        assert not self.l.luns
+        assert self.l.exists == {'iqn.xyz': {}}
 
     @mock.patch('glob.glob')
     def test_find_existing(self, mock_subproc_glob):
@@ -48,12 +48,12 @@ class LunsTestCase(unittest.TestCase):
             def _cmd(self, target, tpg, address):
                 self.called = " ".join([ target, str(tpg), address ])
 
-        with tempfile.NamedTemporaryFile(suffix=".tmp") as tmpfile:
+        with tempfile.NamedTemporaryFile(suffix="._1_1_1_1_1_1_tmp") as tmpfile:
             tmpfile.write("/dev/rbd/rbd/archive\n")
             tmpfile.flush()
             mock_subproc_glob.return_value = [ tmpfile.name ]
             self.l = mock_Luns()
-            assert self.l.luns == [ 'archive' ]
+            assert self.l.exists == {'iqn.xyz': {'1': ['archive']}}
 
 
     def test_cmd_for_rbd(self):

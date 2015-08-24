@@ -12,6 +12,7 @@ class PortalsTestCase(unittest.TestCase):
                                      "addresses": [
                                          "172.16.1.16"
                                      ] } ]
+        Runtime.config = {}
         Runtime.config['addresses'] = [ "172.16.1.16" ]
         Runtime.config['portals'] = {}
         Runtime.config['portals']["iqn.xyz"] = {}
@@ -46,19 +47,26 @@ class PortalsTestCase(unittest.TestCase):
         assert self.pt.called == "iqn.xyz 1 172.16.1.16"
 
     def test_portal_remote(self):
-        Runtime.config['addresses'] = [ "172.16.1.17" ]
+        Common.config['portals'] = [ { "name": "portal2",
+                                     "addresses": [
+                                         "172.16.1.17"
+                                     ] } ]
+        Runtime.config = {}
+        Runtime.config['portals'] = {}
+        Runtime.config['portals']["iqn.xyz"] = {}
+        Runtime.config['portals']["iqn.xyz"]["portal2"] = "2"
 
         class mock_Portals(Portals):
 
 
             def _entries(self):
-                yield("iqn.xyz", "portal1", Common.config['portals'][0])
+                yield("iqn.xyz", "portal2", Common.config['portals'][0])
 
             def _cmd(self, target, tpg, address):
                 self.called = " ".join([ target, tpg, address ])
 
         self.pt = mock_Portals()
-        assert self.pt.called == "iqn.xyz 2 172.16.1.16"
+        assert self.pt.called == "iqn.xyz 2 172.16.1.17"
 
 
     def test_entries(self):
@@ -85,15 +93,6 @@ class PortalsTestCase(unittest.TestCase):
 
         self.pt = mock_Portals()
 
-
-    @mock.patch('glob.glob')
-    def test_portal_remote(self, mock_subproc_glob):
-        Runtime.config['addresses'] = [ "172.16.1.17" ]
-
-        mock_subproc_glob.return_value = []
-
-        self.pt = Portals()
-        assert self.pt.cmds == [['targetcli', '/iscsi/iqn.xyz/tpg2/portals', 'create', '172.16.1.16']]
 
     @mock.patch('glob.glob')
     def test_portal_remote_does_nothing(self, mock_subproc_glob):

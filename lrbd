@@ -628,10 +628,23 @@ class Targets:
         targets = []
         for entry in self.targets:
             if 'hosts' in entry:
-                for host in entry['hosts']:
-                    if (Common.hostname == host):
+                for hentry in entry['hosts']:
+                    if (Common.hostname == hentry['host']):
                         targets.append(entry['target'])
         return(targets)
+
+    def portals(self):
+        """
+        Return only portal values filtered by hostname
+        Return all portal values 
+        """
+        portals = []
+        for entry in self.targets:
+            if 'hosts' in entry:
+                for hentry in entry['hosts']:
+                    #if (Common.hostname == hentry['host']):
+                    portals.append(hentry['portal'])
+        return(portals)
 
     def purge(self):
         """
@@ -642,8 +655,12 @@ class Targets:
                 if (Common.hostname != entry['host']):
                        self.targets.remove(entry)
             if 'hosts' in entry:
-                if not Common.hostname in entry['hosts']:
-                       self.targets.remove(entry)
+                found = False
+                for hentry in entry['hosts']:
+                    if Common.hostname == hentry['host']:
+                        found = True
+                if not found:
+                    self.targets.remove(entry)
 
 class Authentications:
     """
@@ -752,6 +769,8 @@ class Configs:
                     
                     if filter:
                         targets = t.list()
+                        for portal in t.portals():
+                            portals.append(portal)
                         
 
                     attrs = ioctx.get_xattrs(self.config_name)
@@ -965,8 +984,11 @@ class Backstores:
                 continue
             path = TARGET + "/core/rbd_{}/mylun".format(num)
             os.makedirs(path)
+            logging.debug("Creating {}".format(path))
             with open(path + "/control", "w") as control:
                 control.write("udev_path={}".format(device))
+            #with open(path + "/enable", "w") as enable:
+            #    enable.write("1")
             return()
         logging.warning("Over 100 images mapped")
 
@@ -986,6 +1008,17 @@ class Backstores:
         """
         for cmd in uniq(self.cmds):
             popen(cmd)
+        self._enable_rbd()
+
+    def _enable_rbd(self):
+
+        for pentry, gentry, entry in entries():
+            files = glob.glob(TARGET + "/core/rbd_*/{}/enable".format(entry['image']))
+            for file in files:
+                print "file: ", file
+                with open(file, "w") as enable:
+                    enable.write("1")
+                
 
 class Iscsi:
     """
@@ -1032,9 +1065,13 @@ class Iscsi:
                                 str(gentry['target'] + entry['image']))
                     logging.debug("For image {} on target {}\nuuid: {}".format(entry['image'], gentry['target'], _uuid))
                     path = glob.glob(TARGET + "/core/{}_*/{}/wwn/vpd_unit_serial".format(Runtime.config['backstore'], entry['image']))
-                    vus = open(path[0], "w")
-                    vus.write(str(_uuid) + "\n")
-                    vus.close()
+                    try:
+                        vus = open(path[0], "w")
+                        vus.write(str(_uuid) + "\n")
+                        vus.close()
+                    except IOError, e:
+                        # Already in use
+                        pass
 
 
     def create(self):
@@ -1066,7 +1103,6 @@ class TPGs:
             self.portals - maps each portal to TPG per target
         """
         self.cmds = []
-        self.remote = {}
         self.pools = Common.config['pools']
         Runtime.config['addresses'] = addresses()
 
@@ -1074,8 +1110,6 @@ class TPGs:
         self.portals = {}
 
         self._add()
-        self._remote()
-        Runtime.config['remote'] = self.remote
         Runtime.config['portals'] = self.portals
 
     def _add(self):
@@ -1085,20 +1119,39 @@ class TPGs:
         """
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
-            if not target in self.remote:
-                self.remote[target] = None
             if not target in self.tpg:
                 self.tpg[target] = 1
             if not target in self.portals:
                 self.portals[target] = {}
-            if ('portal' in entry and 
-                not entry['portal'] in self.portals[target]):
-                self._check_portal(entry['portal'])
-                self.portals[target][entry['portal']] = self.tpg[target]
-                self.tpg[target] += 1 
-                self.cmds.append(self._cmd(target, 
-                                 self.portals[target][entry['portal']]))
-                logging.debug("Adding TPG {} for target {}".format(self.portals[target][entry['portal']], target))
+            if 'target' in gentry:
+                self._add_target(target)
+            else:
+                self._add_host(entry, target)
+
+    def _add_target(self, target):
+        """
+        """
+        for tentry in Common.config['targets']:
+            if target == tentry['target']:
+                for hentry in tentry['hosts']:
+                    if not hentry['portal'] in self.portals[target]:
+                        self.portals[target][hentry['portal']] = self.tpg[target]
+                        self.tpg[target] += 1 
+                        self.cmds.append(self._cmd(target, 
+                                         self.portals[target][hentry['portal']]))
+                        logging.debug("Adding TPG {} for target {}".format(self.portals[target][hentry['portal']], target))
+                    
+    def _add_host(self, entry, target):
+        """
+        """
+        if ('portal' in entry and 
+            not entry['portal'] in self.portals[target]):
+            self._check_portal(entry['portal'])
+            self.portals[target][entry['portal']] = self.tpg[target]
+            self.tpg[target] += 1 
+            self.cmds.append(self._cmd(target, 
+                             self.portals[target][entry['portal']]))
+            logging.debug("Adding TPG {} for target {}".format(self.portals[target][entry['portal']], target))
 
                     
     def _check_portal(self, name):
@@ -1113,11 +1166,10 @@ class TPGs:
         if not found:
             raise ValueError("portal {} is missing from portals".format(name))
 
-    def _remote(self):
+    def disable_remote(self):
         """
-        Adds a TPG for holding remote gateway portals.  Checks each target.
+        Disable TPG and disable tpg_enabled_sendtargets.
         """
-        
         for target in self.portals.keys():
             for name in self.portals[target].keys():
                 for entry in Common.config['portals']:
@@ -1125,27 +1177,18 @@ class TPGs:
                         for address in entry['addresses']:
                             addr = re.split(" ", address)[0]
                             if not addr in Runtime.config['addresses']:
-                                if not self.remote[target]:
-                                    self.remote[target] = self.tpg[target]
-                                    self.cmds.append(self._cmd(target, 
-                                                         self.tpg[target]))
-                                    logging.debug("Adding TPG {} for target {}".format(self.tpg[target], target))
-                
-    def disable_remote(self):
-        """
-        Disable TPG and disable tpg_enabled_sendtargets.
-        """
-        for target in Runtime.config['remote'].keys():
-            tpg = Runtime.config['remote'][target]
-            if not tpg:
-                continue
+                                self._disable_tpg(target, 
+                                    self.portals[target][name])
+
+
+    def _disable_tpg(self, target, tpg):
             path = TARGET + "/iscsi/{}/tpgt_{}/attrib/tpg_enabled_sendtargets".format(target, tpg)
             if not os.path.isfile(path):
                 raise RuntimeError("tpg_enabled_sendtargets unsupported, upgrade kernel to 3.12.46-102-default or higher")
             tes = open(path, "w")
             tes.write("0")
             tes.close()
-            logging.debug("Disabling tpg_enabled_sendtargets")
+            logging.debug("Disabling tpg_enabled_sendtargets for tpg {} under target {}".format(tpg, target))
             tpg_path = TARGET + "/iscsi/{}/tpgt_{}/enable".format(target, tpg)
             enabled = open(tpg_path).read().rstrip('\n')
             if (enabled == "1"):
@@ -1189,18 +1232,10 @@ class Portals:
             for target, portal, entry in self._entries():
                 if entry['name'] == portal:
                     for address in entry['addresses']:
-                        # Strip Port 
-                        addr = re.split(" ", address)[0]
-                        if addr in Runtime.config['addresses']:
-                            self._cmd(target, 
-                                 Runtime.config['portals'][target][portal], 
-                                 address)
-                            logging.debug("Adding address {} to tpg {} under target {}".format(address, Runtime.config['portals'][target][portal], target))
-                        else:
-                            self._cmd(target, 
-                                 Runtime.config['remote'][target], 
-                                 address)
-                            logging.debug("Adding address {} to tpg {} under target {}".format(address, Runtime.config['remote'][target], target))
+                        self._cmd(target, 
+                            Runtime.config['portals'][target][portal], 
+                            address)
+                        logging.debug("Adding address {} to tpg {} under target {}".format(address, Runtime.config['portals'][target][portal], target))
         else:
             self._cmd(iqn({}), "1", "")
                         
@@ -1229,10 +1264,11 @@ class Portals:
 
     def _cmd(self, target, tpg, address):
         """
-        Compose targetcli commmand for creating portal if needed.
+        Compose targetcli commmand for creating portal if needed. Convert
+        address from space to colon delimited, if needed.
         """
         cmd = [ "targetcli", "/iscsi/{}/tpg{}/portals".format(target, tpg), "create", address ] 
-        portal = glob.glob(TARGET + "/iscsi/{}/tpgt_{}/np/{}*".format(target, tpg, address))
+        portal = glob.glob(TARGET + "/iscsi/{}/tpgt_{}/np/{}*".format(target, tpg, re.sub(r' ', ':', address)))
         if not portal:
             self.cmds.append(cmd)
 
@@ -1247,7 +1283,7 @@ class Portals:
 
 class Luns:
     """
-    Manages the creation and mapping of luns.  Also, provides method for 
+    Manages the creation of luns.  Also, provides method for 
     disabling auto add which is necessary for acls.
     """
 
@@ -1257,26 +1293,44 @@ class Luns:
         correct target.
         """
         self.cmds = []
-        self.luns = []
+        self.exists = {}
                 
         self._find()
 
         for pentry, gentry, entry in entries():
-            if not entry['image'] in self.luns:
-                target = iqn(gentry)
-                tpg = Runtime.tpg(target, entry)
-                self._cmd(target, tpg, entry['image'])
-                logging.debug("Adding lun for image {} to tpg {} under target {}".format(entry['image'], tpg, target))
+            target = iqn(gentry)
+            if 'target' in gentry:
+                for portal in Runtime.config['portals'][target].keys():
+                    tpg = str(Runtime.config['portals'][target][portal])
+                   
+                    if not (target in self.exists and 
+                            tpg in self.exists[target] and
+                            entry['image'] in self.exists[target][tpg]):
+                        self._cmd(target, tpg, entry['image'])
+                        logging.debug("Adding lun for image {} to tpg {} under target {}".format(entry['image'], tpg, target))
+            else:
+                tpg = str(Runtime.tpg(target, entry))
+                if not (target in self.exists and 
+                        tpg in self.exists[target] and
+                        entry['image'] in self.exists[target][tpg]):
+                    self._cmd(target, tpg, entry['image'])
+                    logging.debug("Adding lun for image {} to tpg {} under target {}".format(entry['image'], tpg, target))
                 
     def _find(self):
         """
         Scan paths for existing luns and save lun name to list
         """
         for pentry, gentry, entry in entries():
-            udev_paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/lun/lun_*/*/udev_path".format(iqn(entry)))
+            target = iqn(entry)
+            udev_paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/lun/lun_*/*/udev_path".format(target))
+            if not target in self.exists:
+                self.exists[target] = {}
             for udev_path in udev_paths:
-                contents = open(udev_path).read()
-                self.luns.append(basename(contents.rstrip('\n')))
+                contents = open(udev_path).read().rstrip('\n')
+                tpg = re.split("[/_]", udev_path)[8]
+                if not tpg in self.exists[target]:
+                    self.exists[target][tpg] = []
+                self.exists[target][tpg].append(basename(contents))
 
     def _cmd(self, target, tpg, image):
         """
@@ -1318,11 +1372,19 @@ class Map:
 
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
-            tpg = Runtime.tpg(target, entry)
-            lun = self._lun(target, tpg, entry['image'])
-            self._check(target, tpg, entry['initiator'])
-            self._cmd(target, tpg, entry['initiator'], lun)
-            logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
+            if 'target' in gentry:
+                for portal in Runtime.config['portals'][target].keys():
+                    tpg = Runtime.config['portals'][target][portal]
+                    lun = self._lun(target, tpg, entry['image'])
+                    self._check(target, tpg, entry['initiator'])
+                    self._cmd(target, tpg, entry['initiator'], lun)
+                    logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
+            else:
+                tpg = Runtime.tpg(target, entry)
+                lun = self._lun(target, tpg, entry['image'])
+                self._check(target, tpg, entry['initiator'])
+                self._cmd(target, tpg, entry['initiator'], lun)
+                logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
               
 
     def _lun(self, target, tpg, image):
@@ -1385,23 +1447,26 @@ class Acls:
         """
         self.cmds = []
         self.initiators = []
+        self.exists = {}
 
         self._find()
         for pentry, gentry, entry in entries():
             if not 'initiator' in entry:
                 raise ValueError("initiator missing from host {}".format(gentry['host']))
-            if not entry['initiator'] in self.initiators:
-                target = iqn(gentry)
-                tpg = Runtime.tpg(target, entry)
-                self._cmd(target, tpg, entry['initiator'])
-                for poentry in Common.config['portals']:
-                    if (poentry['name'] == entry['portal']):
-                        for address in poentry['addresses']:
-                            addr = re.split(" ", address)[0]
-                            if not addr in Runtime.config['addresses']:
-                                tpg = Runtime.config['remote'][target]
-                                self._cmd(target, tpg, entry['initiator'])
-                                logging.debug("Adding initiator {} to tpg {} under target {}".format(entry['initiator'], tpg, target))
+            target = iqn(gentry)
+            if 'target' in gentry:
+                for portal in Runtime.config['portals'][target].keys():
+                    tpg = str(Runtime.config['portals'][target][portal])
+                    if not (target in self.exists and
+                            tpg in self.exists[target] and
+                            entry['initiator'] in self.exists[target][tpg]):
+                        self._cmd(target, tpg, entry['initiator'])
+            else:
+                tpg = str(Runtime.tpg(target, entry))
+                if not (target in self.exists and 
+                        tpg in self.exists[target] and
+                        entry['initiator'] in self.exists[target][tpg]):
+                    self._cmd(target, tpg, entry['initiator'])
                     
     def _find(self):
         """
@@ -1410,9 +1475,17 @@ class Acls:
         for pentry in Common.config['pools']:
             if 'gateways' in pentry:
                 for gentry in pentry['gateways']:
-                    paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/acls/*".format(iqn(gentry)))
+                    target = iqn(gentry)
+                    if not target in self.exists:
+                        self.exists[target] = {}
+                    paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/acls/*".format(target))
                     for path in paths:
                         self.initiators.append(basename(path))
+                        tpg = re.split("[/_]", path)[8]
+                        if not tpg in self.exists[target]:
+                            self.exists[target][tpg] = []
+                        self.exists[target][tpg].append(basename(path))
+                        
 
     def _cmd(self, target, tpg, initiator):
         """
@@ -1557,6 +1630,11 @@ class Auth:
         Disable discovery
         """
         logging.debug("Disable discovery authentication")
+        path = TARGET + "/iscsi/discovery_auth"
+        enforce = open(path + "/enforce_discovery_auth").read().rstrip('\n')
+        if (enforce == "0"):
+            return([])
+
         cmd = [ "targetcli", "/iscsi", "set", "discovery_auth", "enable=0" ]
         return(cmd)
 

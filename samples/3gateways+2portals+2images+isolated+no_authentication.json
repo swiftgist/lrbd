@@ -11,7 +11,9 @@
           { "host": "igw1", "portal": "portal1" },
           { "host": "igw1", "portal": "portal2" },
           { "host": "igw2", "portal": "portal3" },
-          { "host": "igw2", "portal": "portal4" }
+          { "host": "igw2", "portal": "portal4" },
+          { "host": "igw3", "portal": "portal5" },
+          { "host": "igw3", "portal": "portal6" }
       ],
       "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
     }
@@ -32,6 +34,14 @@
       {
           "name": "portal4",
           "addresses": [ "172.16.2.17" ]
+      },
+      {
+          "name": "portal5",
+          "addresses": [ "172.16.3.16" ]
+      },
+      {
+          "name": "portal6",
+          "addresses": [ "172.16.3.17" ]
       }
   ],
   "pools": [

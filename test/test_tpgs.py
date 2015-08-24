@@ -32,7 +32,6 @@ class TPGsTestCase(unittest.TestCase):
 
         self.t = mock_TPGs()
         assert ('addresses' in Runtime.config and
-            'remote' in Runtime.config and
             'portals' in Runtime.config)
 
     def test_add_none(self):
@@ -96,7 +95,8 @@ class TPGsTestCase(unittest.TestCase):
         self.t = mock_TPGs()
         self.t._check_portal("portal2")
 
-    def test_remote(self):
+    @mock.patch('lrbd.TPGs._disable_tpg')
+    def test_remote(self, mock_disable_tpg):
         Common.config['portals'] = [ { "name": "portal1", 
                                        "addresses": [ "172.16.1.16" ] } ]
         class mock_TPGs(TPGs):
@@ -107,10 +107,10 @@ class TPGsTestCase(unittest.TestCase):
         self.t = mock_TPGs()
         self.t.portals["iqn.xyz"] = {}
         self.t.portals["iqn.xyz"]["portal1"] = 1
-        self.t.remote["iqn.xyz"] = None
         self.t.tpg["iqn.xyz"] = 2
-        self.t._remote()
-        assert self.t.cmds == [['targetcli', '/iscsi/iqn.xyz', 'create 2']]
+        Runtime.config['addresses'] = [ "172.16.1.17" ]
+        self.t.disable_remote()
+        assert mock_disable_tpg.called
 
     @mock.patch('glob.glob')
     def test_cmd(self, mock_subproc_glob):

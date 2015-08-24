@@ -47,8 +47,8 @@ portals. The following JSON structure represents the pool configuration:
 .RS 2
 {
 .RS 2
-"host|target": 
-.I hostname|target
+"host": 
+.I hostname
 ,
 .RS 0
 "tpg": [ 
@@ -71,12 +71,36 @@ portals. The following JSON structure represents the pool configuration:
 }, ... 
 .RE
 ],
+.RS 0
+"target": 
+.I target
+,
+.RS 0
+"tpg": [ 
+.RS 2
+{
+.RS 2
+"image": 
+.I image_name
+,
+.RS 0
+"iqn":
+.I initiator_iqn
+.RE
+.RE
+}, ... 
+.RE
+],
+.RE
+.RE
 .RE
 .RE
 }, ...
 .RE
+]
 .RE
-} 
+.RE
+}
 .RE
 ]
 .SS AUTHENTICATION
@@ -226,22 +250,30 @@ Generate static values with
 .BR iscsi-name (5). 
 .PP
 The target structure is stored in the extended attribute
-.B targets
-and is the simplest.  A target is associated with a host or group of hosts
-as shown below:
+.B targets.
+A target is associated with a host or group of hosts.  For locally configured targets, use the host attribute.  For redundantly configured targets, use hosts.
 .PP
 .RS 2
 "target": [
 .RS 2
 {
 .RS 2
-"host|hosts":
-.I hostname|[host1, host2, ... ]
-,
-.RS 0
-"iqn":
+"target":
 .I target_iqn
 ,
+.RS 0
+"host":
+.I hostname
+.RS 0
+"hosts":
+.RS 2
+{ 
+.RS 2
+"host": host1, "portal": portal1 
+.RE
+}, ... 
+.RE
+],
 .RE
 .RE
 }, ...

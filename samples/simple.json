@@ -1,8 +1,8 @@
 {
-    "target": [
+    "targets": [
       {
         "host": "igw1",
-        "target": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.abcdefghijk"
+        "target": "iqn.2003-01.org.linux-iscsi.generic.x86:sn.abcdefghijk"
       }
     ],
     "auth": [
@@ -10,11 +10,8 @@
             "host": "igw1", 
             "authentication": "tpg", 
             "tpg": {
-                "userid": "common2", 
-                "password": "pass1", 
-                "mutual": "enable", 
-                "userid_mutual": "target2",
-                "password_mutual": "pass2" 
+                "userid": "common1", 
+                "password": "pass1"
             }
         } 
     ], 
