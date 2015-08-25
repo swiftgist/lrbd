@@ -42,16 +42,6 @@ set the Ceph configuration file.  The default is /etc/ceph/ceph.conf.
 specify the hostname which defaults to gethostname(). 
 .RE
 .PP
-\-f file, \-\-file file
-.RS 4
-import the configuration from a file
-.RE
-.PP
-\-a file, \-\-add file
-.RS 4
-add the configuration from a file
-.RE
-.PP
 \-o, \-\-output
 .RS 4
 display the global configuration
@@ -60,6 +50,16 @@ display the global configuration
 \-l, \-\-local
 .RS 4
 display the host configuration
+.RE
+.PP
+\-f file, \-\-file file
+.RS 4
+import the configuration from a file
+.RE
+.PP
+\-a file, \-\-add file
+.RS 4
+add the configuration from a file
 .RE
 .PP
 \-u, \-\-unmap
@@ -75,6 +75,16 @@ print INFO messages
 \-d, \-\-debug
 .RS 4
 print DEBUG messages
+.RE
+.PP
+\-I, \-\-iblock
+.RS 4
+use an iblock backstore for images, default to rbd
+.RE
+.PP
+\-R, \-\-rbd
+.RS 4
+use an rbd backstore for images, can override -I
 .RE
 .PP
 \-W, \-\-wipe
@@ -119,7 +129,7 @@ Edit the current configuration with the editor joe
 .RS 4
 .\}
 .nf
-$ lrbd -e joe
+$ lrbd -E joe
 .fi
 .if n \{\
 .RE
@@ -130,6 +140,10 @@ $ lrbd -e joe
 .I /etc/sysconfig/lrbd
 .RS
 The environment file for customizing options for the lrbd.service
+.RE
+.I /usr/lib/systemd/system/lrbd.service
+.RS
+The service file to apply the configuration during boot.  
 .RE
 .SH AUTHOR
 Eric Jackson <ejackson@suse.com>

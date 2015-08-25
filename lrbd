@@ -648,7 +648,7 @@ class Targets:
 
     def purge(self):
         """
-        Remove all host entries that do not match hostname
+        Remove all entries that do not match or contain hostname
         """
         for entry in self.targets:
             if 'host' in entry:
@@ -932,65 +932,47 @@ class Backstores:
 
     def __init__(self, backstore):
         """
-        Create commands for creating each backstore.  Skip existing. 
+        Set selected backstore, load modules for rbd, create command
         """
         self.cmds = []
-        if (backstore == "rbd"):
-            self._load_modules()
-            self._rbd()
-            Runtime.config['backstore'] = "rbd"
+        if backstore == None:
+            self._detect()
         else:
-            self._iblock()
-            Runtime.config['backstore'] = "iblock"
+            self.selected = backstore
 
+        if (self.selected == "rbd"):
+            self._load_modules()
+        self._cmd()
+        Runtime.config['backstore'] = self.selected
+            
 
-    def _iblock(self):
+    def _detect(self):
         """
-        The traditional backstore for iSCSI.  Does not support simultaneous
-        multipath access.
+        Check for existing backstores and set selected, otherwise default
+        All images will be either iblock or rbd.  Last checked wins.
         """
         for pentry, gentry, entry in entries():
-           cmd = [ "targetcli", "/backstores/iblock", "create", 
-                   "name={}".format(entry['image']), 
-                   "dev=/dev/rbd/{}/{}".format(pentry['pool'], entry['image']) ]
-           backstore = glob.glob(TARGET + "/core/iblock_*/{}".format(entry['image']))
-           if not backstore: 
-               self.cmds.append(cmd)
+            existing = glob.glob(TARGET + "/core/*/{}".format(entry['image']))
+            if existing:
+                self.selected = re.split("[/_]", existing[0])[6]
+            else:
+                # default
+                self.selected = "rbd"
 
-    def _rbd(self):
+    def _cmd(self):
         """
-        The new backstore for iSCSI.  Supports simultaneous multipath access.
+        Generate the backstore commands, skip existing.
         """
         for pentry, gentry, entry in entries():
-           self._rbd_setup("/dev/rbd/{}/{}".format(pentry['pool'], 
-                               entry['image']))
-           cmd = [ "targetcli", "/backstores/rbd", "create", 
-                   "name={}".format(entry['image']), 
-                   "dev=/dev/rbd/{}/{}".format(pentry['pool'], entry['image']) ]
-           backstore = glob.glob(TARGET + "/core/rbd_*/{}".format(entry['image']))
-           if not backstore: 
-               self.cmds.append(cmd)
+           
+            cmd = [ "targetcli", "/backstores/{}".format(self.selected), 
+                    "create", "name={}".format(entry['image']), 
+                    "dev=/dev/rbd/{}/{}".format(pentry['pool'], 
+                    entry['image']) ]
+            backstore = glob.glob(TARGET + "/core/{}_*/{}".format(self.selected, entry['image']))
+            if not backstore: 
+                self.cmds.append(cmd)
 
-    def _rbd_setup(self, device):
-        """
-        Directory creation, control file creation are prerequisites for the
-        rbd backstore.
-        """
-        rbds = []
-        for path in glob.glob(TARGET + "/core/rbd_*"):
-            rbds.append(int(re.split("[/_]", path)[7]))
-        for num in range(100):
-            if num in rbds:
-                continue
-            path = TARGET + "/core/rbd_{}/mylun".format(num)
-            os.makedirs(path)
-            logging.debug("Creating {}".format(path))
-            with open(path + "/control", "w") as control:
-                control.write("udev_path={}".format(device))
-            #with open(path + "/enable", "w") as enable:
-            #    enable.write("1")
-            return()
-        logging.warning("Over 100 images mapped")
 
     def _load_modules(self):
         """
@@ -1011,13 +993,18 @@ class Backstores:
         self._enable_rbd()
 
     def _enable_rbd(self):
+        """
+        An image in an rbd backstore must be enabled prior to lun creation
+        """
 
         for pentry, gentry, entry in entries():
             files = glob.glob(TARGET + "/core/rbd_*/{}/enable".format(entry['image']))
             for file in files:
-                print "file: ", file
-                with open(file, "w") as enable:
-                    enable.write("1")
+                enabled = open(file).read().rstrip('\n')
+                if (enabled == "0"):
+                    with open(file, "w") as enable:
+                        enable.write("1")
+                        logging.debug("Enabling {}".format(file))
                 
 
 class Iscsi:
@@ -1130,6 +1117,12 @@ class TPGs:
 
     def _add_target(self, target):
         """
+        Adds a TPG for each portal on this host.  Effectively multiplies the
+        number of defined groups of TPGs by the number of portal groups.  Each
+        gateway will create the same ordering so a specific image will be the
+        same TPG and index on every gateway.
+ 
+            target - target iqn
         """
         for tentry in Common.config['targets']:
             if target == tentry['target']:
@@ -1143,6 +1136,10 @@ class TPGs:
                     
     def _add_host(self, entry, target):
         """
+        Adds a tpg for the specified entry
+
+            entry - a dict containing portal, initiator and image keys 
+            target - target iqn 
         """
         if ('portal' in entry and 
             not entry['portal'] in self.portals[target]):
@@ -1252,6 +1249,11 @@ class Portals:
 
 
     def _check(self, name):
+        """
+        Simple verification to check the portal referenced is defined
+
+            name - name of portal
+        """
         found = False
         for entry in Common.config['portals']:
             if entry['name'] == name:
@@ -1914,9 +1916,12 @@ if __name__ == "__main__":
                     help='print INFO messages')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug', 
                     help='print DEBUG messages')
+    parser.add_argument('-I', '--iblock', action='store_const', 
+                    dest='backstore', const='iblock',
+                    help='set the backstore to iblock, defaults to rbd')
     parser.add_argument('-R', '--rbd', action='store_const', dest='backstore', 
                     const='rbd',
-                    help='set the backstore to rbd, defaults to iblock')
+                    help='set the backstore to rbd')
     parser.add_argument('-W', '--wipe', action='store_true', dest='wipe', 
                     help='wipe the configuration objects from all pools')
     parser.add_argument('-C', '--clear', action='store_true', dest='clear', 

@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 0.9.8
+Version: 0.9.9
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
@@ -27,12 +27,13 @@ Source0: lrbd-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-root
 BuildArch: noarch
 Requires: python-netifaces
-Requires: targetcli
+Requires: targetcli >= 2.1-8
+Requires: python-rtslib >= 2.2-21
 Summary: Configures iSCSI access to Ceph rbd images
 
 %description
-This utility creates, modifies and retrieves the configuration from Ceph for 
-applying targetcli commands to a host.  
+This utility creates, modifies and retrieves a centralized, configuration from 
+Ceph for configuring iSCSI access on a host.
 
 %prep
 

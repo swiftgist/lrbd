@@ -21,7 +21,7 @@ class BackstoresTestCase(unittest.TestCase):
                 pass
 
         self.b = mock_Backstores(None)
-        assert Runtime.config['backstore'] == "iblock"
+        assert Runtime.config['backstore'] == "rbd"
 
     def test_backstores_iblock(self):
         class mock_Backstores(Backstores):
@@ -83,6 +83,79 @@ class BackstoresTestCase(unittest.TestCase):
 
         mock_subproc_glob.return_value = "globbed/path/name"
         self.b = Backstores("iblock")
+        assert not self.b.cmds
+
+    @mock.patch('glob.glob')
+    def test_detect_default(self, mock_subproc_glob):
+        Common.config = { 
+            "pools": [ 
+                { "pool": "rbd", 
+                  "gateways": [
+                    { "host": "igw1", "tpg": [ 
+                        { "image": "archive" } 
+                        ] 
+                    } ] 
+                } ] }
+        class mock_Backstores(Backstores):
+              def _load_modules(self):
+                  pass
+
+        mock_subproc_glob.return_value = []
+        self.b = mock_Backstores(None)
+
+        assert self.b.selected == "rbd"
+
+    @mock.patch('glob.glob')
+    def test_detect_existing(self, mock_subproc_glob):
+        Common.config = { 
+            "pools": [ 
+                { "pool": "rbd", 
+                  "gateways": [
+                    { "host": "igw1", "tpg": [ 
+                        { "image": "archive" } 
+                        ] 
+                    } ] 
+                } ] }
+
+        mock_subproc_glob.return_value = [ "/s/k/c/t/c/BACKSTORE_0/archive" ]
+        self.b = Backstores(None)
+        assert self.b.selected == "BACKSTORE"
+
+    def test_rbd(self):
+
+        Common.config = { 
+            "pools": [ 
+                { "pool": "rbd", 
+                  "gateways": [
+                    { "host": "igw1", "tpg": [ 
+                        { "image": "archive" } 
+                        ] 
+                    } ] 
+                } ] }
+        class mock_Backstores(Backstores):
+              def _load_modules(self):
+                  pass
+
+        self.b = mock_Backstores("rbd")
+        assert self.b.cmds == [['targetcli', '/backstores/rbd', 'create', 'name=archive', 'dev=/dev/rbd/rbd/archive']]
+
+    @mock.patch('glob.glob')
+    def test_rbd_does_nothing(self, mock_subproc_glob):
+        Common.config = { 
+            "pools": [ 
+                { "pool": "rbd", 
+                  "gateways": [
+                    { "host": "igw1", "tpg": [ 
+                        { "image": "archive" } 
+                        ] 
+                    } ] 
+                } ] }
+        class mock_Backstores(Backstores):
+              def _load_modules(self):
+                  pass
+
+        mock_subproc_glob.return_value = "globbed/path/name"
+        self.b = mock_Backstores("rbd")
         assert not self.b.cmds
 
 

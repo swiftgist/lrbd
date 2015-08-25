@@ -24,8 +24,6 @@ class AclsTestCase(unittest.TestCase):
                 } ] 
 
         Runtime.config['addresses'] = [ "172.16.1.16" ]
-        #Runtime.config['remote'] = {}
-        #Runtime.config['remote']["iqn.xyz"] = "2"
         Runtime.config['portals'] = {}
         Runtime.config['portals']["iqn.xyz"] = {}
         Runtime.config['portals']["iqn.xyz"]["portal1"] = "1"
@@ -121,15 +119,12 @@ class AclsTestCase(unittest.TestCase):
                 } ] 
 
         Runtime.config['addresses'] = [ "172.16.1.16" ]
-        #Runtime.config['remote'] = {}
-        #Runtime.config['remote']["iqn.xyz"] = "2"
         Runtime.config['portals'] = {}
         Runtime.config['portals']["iqn.xyz"] = {}
         Runtime.config['portals']["iqn.xyz"]["portal1"] = "1"
 
 
         class mock_Acls(Acls):
-
 
             def _find(self):
                 pass
