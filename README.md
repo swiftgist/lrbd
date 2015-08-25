@@ -47,7 +47,7 @@ See [Wiki](https://github.com/swiftgist/lrbd/wiki)
 
 ## FAQ
 
-1. What is a gateway?
+* What is a gateway?
 
 The gateway is simply a Linux host that supports iSCSI.  This host is providing iSCSI access to another host, a client or initiator, and is mapping Ceph RBD images locally.  Any client that cannot use Ceph directly (lack of library support), but supports iSCSI can still use Ceph storage.
 
