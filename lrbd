@@ -1518,28 +1518,45 @@ class Auth:
         is independent of normal authentication and optional.
         """
         self.cmds = []
+        self.tpg = {}
 
-        if 'auth' in Common.config:
+        if 'auth' in Common.config and Common.config['auth']:
             for auth in Common.config['auth']:
-                self.target = iqn(auth)
-                if auth['authentication'] == "none":
-                    self.cmds.append(self.set_noauth(auth))
-                elif auth['authentication'] == "tpg":
-                    self.cmds.extend(self.select_tpg(auth))
-                elif auth['authentication'] == "acls":
-                    self.cmds.extend(self.select_acls(auth))
-                else:
-                    raise ValueError("InvalidAuthentication: authentication must be one of tpg, acls or none")
-                self.cmds.extend(self.select_discovery())
+                for target in Runtime.config['portals'].keys():
+                    if target == iqn(auth):
+                        self.target = target
+                        for portal in Runtime.config['portals'][target].keys():
+                            self.tpg = str(Runtime.config['portals'][target][portal])
+                            self.auth = auth
+                            self.select_auth()
+                            self.cmds.extend(self.select_discovery())
         else:
-            self.cmds.append(self.set_noauth({}))
+            for target in Runtime.config['portals'].keys():
+                self.target = target
+                for portal in Runtime.config['portals'][target].keys():
+                    self.tpg = str(Runtime.config['portals'][target][portal])
+                    self.cmds.append(self.set_noauth())
+            self.cmds.append(self.set_discovery_off())
 
-    def set_noauth(self, auth):
+    def select_auth(self):
+        """
+        Delegate authentication
+        """
+        if self.auth['authentication'] == "none":
+            self.cmds.append(self.set_noauth())
+        elif self.auth['authentication'] == "tpg":
+            self.cmds.extend(self.select_tpg())
+        elif self.auth['authentication'] == "acls":
+            self.cmds.extend(self.select_acls())
+        else:
+            raise ValueError("InvalidAuthentication: authentication must be one of tpg, acls or none")
+
+    def set_noauth(self):
         """
         Disable authentication
         """
         logging.debug("Disable authentication")
-        path = TARGET + "/iscsi/{}/tpgt_1/attrib".format(iqn(auth))
+        path = TARGET + "/iscsi/{}/tpgt_{}/attrib".format(self.target, self.tpg)
         authentication = open(path + "/authentication").read().rstrip('\n')
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
         
@@ -1547,7 +1564,7 @@ class Auth:
            (demo_mode_write_protect == "0")):
             return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg1".format(iqn(auth)), "set", "attribute", "authentication=0", "demo_mode_write_protect=0" ] 
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=0", "demo_mode_write_protect=0" ] 
         return(cmd)
 
     def select_discovery(self):
@@ -1559,51 +1576,52 @@ class Auth:
         for auth in Common.config['auth']:
             if "discovery" in auth:
                 if auth['discovery']['auth'] == "enable":
+                    self.d_auth = auth
                     if "mutual" in auth['discovery']:
                         if auth['discovery']['mutual'] == "enable":
-                            cmds.append(self.set_discovery_mutual(auth))
+                            cmds.append(self.set_discovery_mutual())
                         else:
-                            cmds.append(self.set_discovery(auth))
+                            cmds.append(self.set_discovery())
                     else:
-                        cmds.append(self.set_discovery(auth))
+                        cmds.append(self.set_discovery())
                 else:
                     cmds.append(self.set_discovery_off())
             else:
                 cmds.append(self.set_discovery_off())
             return(cmds)
 
-    def set_discovery(self, auth):
+    def set_discovery(self):
         """
         Call targetcli to only set the discovery userid and password.  Check
         current settings.
         """
         logging.debug("Set discovery authentication")
         keys = [ 'userid', 'password']
-        check_keys(keys, auth['discovery'], "discovery under auth")
+        check_keys(keys, self.d_auth['discovery'], "discovery under auth")
 
         path = TARGET + "/iscsi/discovery_auth"
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
         
-        if compare_settings(keys, current, auth['discovery']):
+        if compare_settings(keys, current, self.d_auth['discovery']):
             return([])
 
         cmd = [ "targetcli", "/iscsi", "set", "discovery_auth", "enable=1",
                  "userid={}".format(
-                     auth['discovery']['userid']), 
+                     self.d_auth['discovery']['userid']), 
                  "password={}".format(
-                     auth['discovery']['password']) ] 
+                     self.d_auth['discovery']['password']) ] 
         return(cmd)
 
-    def set_discovery_mutual(self, auth):
+    def set_discovery_mutual(self):
         """
         Call targetcli to set both normal and mutual discovery authentication.
         Checks current settings.
         """
         logging.debug("Set discovery and mutual authentication")
         keys = [ 'userid', 'password', 'userid_mutual', 'password_mutual']
-        check_keys(keys, auth['discovery'], "discovery under auth")
+        check_keys(keys, self.d_auth['discovery'], "discovery under auth")
 
         path = TARGET + "/iscsi/discovery_auth"
         current = {}
@@ -1612,19 +1630,19 @@ class Auth:
         current['userid_mutual'] = open(path + "/userid_mutual").read().rstrip('\n')
         current['password_mutual'] = open(path + "/password_mutual").read().rstrip('\n')
         
-        if compare_settings(keys, current, auth['discovery']):
+        if compare_settings(keys, current, self.d_auth['discovery']):
             return([])
 
 
         cmd = [ "targetcli", "/iscsi", "set", "discovery_auth", "enable=1", 
                  "userid={}".format(
-                     auth['discovery']['userid']), 
+                     self.d_auth['discovery']['userid']), 
                  "password={}".format(
-                     auth['discovery']['password']), 
+                     self.d_auth['discovery']['password']), 
                  "mutual_userid={}".format(
-                     auth['discovery']['userid_mutual']), 
+                     self.d_auth['discovery']['userid_mutual']), 
                  "mutual_password={}".format(
-                     auth['discovery']['password_mutual']) ] 
+                     self.d_auth['discovery']['password_mutual']) ] 
         return(cmd)
 
     def set_discovery_off(self):
@@ -1640,86 +1658,86 @@ class Auth:
         cmd = [ "targetcli", "/iscsi", "set", "discovery_auth", "enable=0" ]
         return(cmd)
 
-    def select_tpg(self, auth):
+    def select_tpg(self):
         """
         TPG is optional, can have only mutual disabled or be completely 
         enabled.  Delegate appropriately.  TPG allows a common userid and
         password for all initiators.
         """
         cmds = []
-        if "mutual" in auth['tpg']:
-            if auth['tpg']['mutual'] == "enable":
-                cmds.append(self.set_tpg_mutual(auth))
-                cmds.append(self.set_tpg_mode(auth))
+        if "mutual" in self.auth['tpg']:
+            if self.auth['tpg']['mutual'] == "enable":
+                cmds.append(self.set_tpg_mutual())
+                cmds.append(self.set_tpg_mode())
             else:    
-                cmds.append(self.set_tpg(auth))
-                cmds.append(self.set_tpg_mode(auth))
+                cmds.append(self.set_tpg())
+                cmds.append(self.set_tpg_mode())
         else:
-            cmds.append(self.set_tpg(auth))
-            cmds.append(self.set_tpg_mode(auth))
+            cmds.append(self.set_tpg())
+            cmds.append(self.set_tpg_mode())
         return(cmds)
 
 
-    def set_tpg(self, auth):
+    def set_tpg(self):
         """
         Call targetcli to set only the common userid and password.  Check
         current setting.
         """
         logging.debug("Set tpg authentication")
         keys = [ 'userid', 'password']
-        check_keys(keys, auth['tpg'], "tpg under auth")
+        check_keys(keys, self.auth['tpg'], "tpg under auth")
                 
-        path = TARGET + "/iscsi/{}/tpgt_1/auth".format(iqn(auth))
+        path = TARGET + "/iscsi/{}/tpgt_{}/auth".format(self.target, self.tpg)
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
         
-        if compare_settings(keys, current, auth['tpg']):
+        if compare_settings(keys, current, self.auth['tpg']):
             return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg1".format(iqn(auth)), "set", "auth", 
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "auth", 
                  "userid={}".format(
-                     auth['tpg']['userid']), 
+                     self.auth['tpg']['userid']), 
                  "password={}".format(
-                     auth['tpg']['password']) ] 
+                     self.auth['tpg']['password']) ] 
         return(cmd)
 
-    def set_tpg_mutual(self, auth):
+    def set_tpg_mutual(self):
         """
         Call targetcli to set both the common and mutual userids and passwords.
         Checks current settings.
         """
         logging.debug("Set tpg and mutual authentication")
         keys = [ 'userid', 'password', 'userid_mutual', 'password_mutual']
-        check_keys(keys, auth['tpg'], "tpg under auth")
+        check_keys(keys, self.auth['tpg'], "tpg under auth")
 
-        path = TARGET + "/iscsi/{}/tpgt_1/auth".format(iqn(auth))
+        path = TARGET + "/iscsi/{}/tpgt_{}/auth".format(self.target, self.tpg)
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
         current['userid_mutual'] = open(path + "/userid_mutual").read().rstrip('\n')
         current['password_mutual'] = open(path + "/password_mutual").read().rstrip('\n')
         
-        if compare_settings(keys, current, auth['tpg']):
+        if compare_settings(keys, current, self.auth['tpg']):
             return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg1".format(iqn(auth)), "set", "auth", 
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "auth", 
                  "userid={}".format(
-                     auth['tpg']['userid']), 
+                     self.auth['tpg']['userid']), 
                  "password={}".format(
-                     auth['tpg']['password']), 
+                     self.auth['tpg']['password']), 
                  "userid_mutual={}".format(
-                     auth['tpg']['userid_mutual']), 
+                     self.auth['tpg']['userid_mutual']), 
                  "password_mutual={}".format(
-                     auth['tpg']['password_mutual']) ] 
+                     self.auth['tpg']['password_mutual']) ] 
         return(cmd)
 
-    def set_tpg_mode(self, auth):
+    def set_tpg_mode(self):
         """
         Enable authentication, allow writing and enable acl generation. Checks
         current settings.
         """
-        path = TARGET + "/iscsi/{}/tpgt_1/attrib".format(iqn(auth))
+        path = TARGET + "/iscsi/{}/tpgt_{}/attrib".format(self.target, self.tpg)
         authentication = open(path + "/authentication").read().rstrip('\n')
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
         generate_node_acls = open(path + "/generate_node_acls").read().rstrip('\n')
@@ -1729,9 +1747,9 @@ class Auth:
            (generate_node_acls  == "1")): 
             return([])
 
-        return([ "targetcli", "/iscsi/{}/tpg1".format(iqn(auth)), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=1" ]) 
+        return([ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=1" ]) 
 
-    def select_acls(self, auth):
+    def select_acls(self):
         """
         ACLs are optional, can have only mutual disabled or be completely 
         enabled for each initiator.  Delegate appropriately.  ACLs allow a 
@@ -1739,70 +1757,71 @@ class Auth:
         
         """
         cmds = []
-        for acl in auth['acls']:
+        for acl in self.auth['acls']:
+            self.acl = acl
             if "mutual" in acl:
                 if acl['mutual'] == "enable":
-                    cmds.append(self.set_acls_mutual(acl, auth))
+                    cmds.append(self.set_acls_mutual())
                 else:
-                    cmds.append(self.set_acls(acl, auth))
+                    cmds.append(self.set_acls())
             else:
-                cmds.append(self.set_acls(acl, auth))
-        cmds.append(self.set_acls_mode(auth))
+                cmds.append(self.set_acls())
+        cmds.append(self.set_acls_mode())
         return(cmds)
  
-    def set_acls(self, acl, auth):
+    def set_acls(self):
         """
         Call targetcli to set a userid and password for a specific initiator.
         Checks current setting.
         """
         logging.debug("Set acl authentication")
         keys = [ 'userid', 'password']
-        check_keys(keys, acl, "acl")
+        check_keys(keys, self.acl, "acl")
 
-        path = TARGET + "/iscsi/{}/tpgt_1/acls/{}/auth".format(iqn(auth), acl['initiator'])
+        path = TARGET + "/iscsi/{}/tpgt_{}/acls/{}/auth".format(self.target, self.tpg, acl['initiator'])
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
         
-        if compare_settings(keys, current, acl):
+        if compare_settings(keys, current, self.acl):
             return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg1/acls/{}".format(iqn(auth), acl['initiator']), "set", "auth", 
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(self.target, self.tpg, acl['initiator']), "set", "auth", 
                  "userid={}".format(acl['userid']),
                  "password={}".format(acl['password']), ] 
         return(cmd)
 
-    def set_acls_mutual(self, acl, auth):
+    def set_acls_mutual(self):
         """
         Call targetcli to set both a normal and mutual authentication for 
         an initiator.  Checks current settings.
         """
         logging.debug("Set acl and mutual authentication")
         keys = [ 'userid', 'password', 'userid_mutual', 'password_mutual']
-        check_keys(keys, acl, "acl")
+        check_keys(keys, self.acl, "acl")
 
-        path = TARGET + "/iscsi/{}/tpgt_1/acls/{}/auth".format(iqn(auth), acl['initiator'])
+        path = TARGET + "/iscsi/{}/tpgt_{}/acls/{}/auth".format(self.target, self.tpg, self.acl['initiator'])
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
         current['userid_mutual'] = open(path + "/userid_mutual").read().rstrip('\n')
         current['password_mutual'] = open(path + "/password_mutual").read().rstrip('\n')
 
-        if compare_settings(keys, current, acl):
+        if compare_settings(keys, current, self.acl):
             return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg1/acls/{}".format(iqn(auth), acl['initiator']), "set", "auth", 
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(self.target, self.tpg, acl['initiator']), "set", "auth", 
                  "userid={}".format(acl['userid']),
                  "password={}".format(acl['password']), 
                  "userid_mutual={}".format(acl['userid_mutual']),
                  "password_mutual={}".format(acl['password_mutual']) ] 
         return(cmd)
 
-    def set_acls_mode(self, auth):
+    def set_acls_mode(self):
         """
         Enable authentication, disable acls generation.  Checks current settings.
         """
-        path = TARGET + "/iscsi/{}/tpgt_1/attrib".format(iqn(auth))
+        path = TARGET + "/iscsi/{}/tpgt_{}/attrib".format(self.target, self.tpg)
         authentication = open(path + "/authentication").read().rstrip('\n')
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
         generate_node_acls = open(path + "/generate_node_acls").read().rstrip('\n')
@@ -1811,7 +1830,7 @@ class Auth:
            (demo_mode_write_protect == "0") and
            (generate_node_acls  == "0")): 
             return([])
-        return([ "targetcli", "/iscsi/{}/tpg1".format(iqn(auth)), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=0" ]) 
+        return([ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=0" ]) 
 
     def create(self):
         for cmd in self.cmds:

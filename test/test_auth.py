@@ -10,17 +10,20 @@ class AuthTestCase(unittest.TestCase):
         del Common.config['auth']
         class mock_Auth(Auth):
 
-            def set_noauth(self, auth):
+            def set_noauth(self):
                 return("noauth")
+
+            def set_discovery_off(self):
+                return("discovery off")
             
         self.a = mock_Auth()
-        assert self.a.cmds == [ "noauth" ]
+        assert self.a.cmds == [ 'noauth', 'discovery off' ]
 
     def test_auth_none(self):
         Common.config['auth'] = [ { "authentication": "none" } ]
         class mock_Auth(Auth):
 
-            def set_noauth(self, auth):
+            def set_noauth(self):
                 return("noauth")
             def select_discovery(self):
                 return([ "select_discovery" ])
@@ -33,7 +36,7 @@ class AuthTestCase(unittest.TestCase):
         Common.config['auth'] = [ { "authentication": "tpg" } ]
         class mock_Auth(Auth):
 
-            def select_tpg(self, auth):
+            def select_tpg(self):
                 return([ "tpg" ])
             def select_discovery(self):
                 return([ "select_discovery" ])
@@ -45,7 +48,7 @@ class AuthTestCase(unittest.TestCase):
         Common.config['auth'] = [ { "authentication": "acls" } ]
         class mock_Auth(Auth):
 
-            def select_acls(self, auth):
+            def select_acls(self):
                 return([ "acls" ])
             def select_discovery(self):
                 return([ "select_discovery" ])
@@ -63,17 +66,20 @@ class AuthTestCase(unittest.TestCase):
         del Common.config['auth']
         class mock_Auth(Auth):
 
-            def set_noauth(self, auth):
+            def set_noauth(self):
                 return("noauth")
             
+            def set_discovery_off(self):
+                return("discovery off")
+
         self.a = mock_Auth()
-        assert self.a.cmds == [ 'noauth' ]
+        assert self.a.cmds == [ 'noauth', 'discovery off' ]
 
     def test_select_discovery_off(self):
         Common.config['auth'] = [ { "authentication": "none" } ]
         class mock_Auth(Auth):
 
-            def set_noauth(self, auth):
+            def set_noauth(self):
                 return("noauth")
             def set_discovery_off(self):
                 return("discovery off")
@@ -86,7 +92,7 @@ class AuthTestCase(unittest.TestCase):
                                     "discovery": { "auth": "disable" } } ]
         class mock_Auth(Auth):
 
-            def set_noauth(self, auth):
+            def set_noauth(self):
                 return("noauth")
             def set_discovery_off(self):
                 return("discovery off")
@@ -99,9 +105,9 @@ class AuthTestCase(unittest.TestCase):
                                     "discovery": { "auth": "enable" } } ]
         class mock_Auth(Auth):
 
-            def set_noauth(self, auth):
+            def set_noauth(self):
                 return("noauth")
-            def set_discovery(self, auth):
+            def set_discovery(self):
                 return("discovery on")
             
         self.a = mock_Auth()
@@ -113,9 +119,9 @@ class AuthTestCase(unittest.TestCase):
                                                    "mutual": "disable" } } ]
         class mock_Auth(Auth):
 
-            def set_noauth(self, auth):
+            def set_noauth(self):
                 return("noauth")
-            def set_discovery(self, auth):
+            def set_discovery(self):
                 return("discovery on")
             
         self.a = mock_Auth()
@@ -127,9 +133,9 @@ class AuthTestCase(unittest.TestCase):
                                                    "mutual": "enable" } } ]
         class mock_Auth(Auth):
 
-            def set_noauth(self, auth):
+            def set_noauth(self):
                 return("noauth")
-            def set_discovery_mutual(self, auth):
+            def set_discovery_mutual(self):
                 return("discovery_mutual on")
             
         self.a = mock_Auth()
@@ -140,10 +146,10 @@ class AuthTestCase(unittest.TestCase):
                                     "tpg": {} } ]
         class mock_Auth(Auth):
 
-            def set_tpg(self, auth):
+            def set_tpg(self):
                 return("tpg")
             
-            def set_tpg_mode(self, auth):
+            def set_tpg_mode(self):
                 return("tpg mode")
 
             def set_discovery_off(self):
@@ -157,10 +163,10 @@ class AuthTestCase(unittest.TestCase):
                                     "tpg": { "mutual": "disable"} } ]
         class mock_Auth(Auth):
 
-            def set_tpg(self, auth):
+            def set_tpg(self):
                 return("tpg")
             
-            def set_tpg_mode(self, auth):
+            def set_tpg_mode(self):
                 return("tpg mode")
 
             def set_discovery_off(self):
@@ -174,10 +180,10 @@ class AuthTestCase(unittest.TestCase):
                                     "tpg": { "mutual": "enable"} } ]
         class mock_Auth(Auth):
 
-            def set_tpg_mutual(self, auth):
+            def set_tpg_mutual(self):
                 return("tpg mutual")
             
-            def set_tpg_mode(self, auth):
+            def set_tpg_mode(self):
                 return("tpg mode")
 
             def set_discovery_off(self):
@@ -191,10 +197,10 @@ class AuthTestCase(unittest.TestCase):
                                     "acls": {} } ]
         class mock_Auth(Auth):
 
-            def set_acls(self, auth):
+            def set_acls(self):
                 return("acls")
             
-            def set_acls_mode(self, auth):
+            def set_acls_mode(self):
                 return("acls mode")
 
             def set_discovery_off(self):
@@ -208,10 +214,10 @@ class AuthTestCase(unittest.TestCase):
                                     "acls": { "initiator": "iqn.abc" } } ]
         class mock_Auth(Auth):
 
-            def set_acls(self, acl, auth):
+            def set_acls(self):
                 return("acls")
             
-            def set_acls_mode(self, auth):
+            def set_acls_mode(self):
                 return("acls mode")
 
             def set_discovery_off(self):
@@ -226,10 +232,10 @@ class AuthTestCase(unittest.TestCase):
                                               "mutual": "disable" } ] } ]
         class mock_Auth(Auth):
 
-            def set_acls(self, acl, auth):
+            def set_acls(self):
                 return("acls")
             
-            def set_acls_mode(self, auth):
+            def set_acls_mode(self):
                 return("acls mode")
 
             def set_discovery_off(self):
@@ -244,10 +250,10 @@ class AuthTestCase(unittest.TestCase):
                                               "mutual": "enable" } ] } ]
         class mock_Auth(Auth):
 
-            def set_acls_mutual(self, acl, auth):
+            def set_acls_mutual(self):
                 return("acls mutual")
             
-            def set_acls_mode(self, auth):
+            def set_acls_mode(self):
                 return("acls mode")
 
             def set_discovery_off(self):
@@ -261,9 +267,12 @@ class AuthTestCase(unittest.TestCase):
         del Common.config['auth']
         class mock_Auth(Auth):
 
-            def set_noauth(self, auth):
+            def set_noauth(self):
                 return("noauth")
             
+            def set_discovery_off(self):
+                return("discovery off")
+
         self.a = mock_Auth()
         self.a.create()
         assert mock_subproc_popen.called
