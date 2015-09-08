@@ -68,8 +68,7 @@
                     "tpg": [
                         {
                             "portal": "portal1",
-                            "image": "city",
-                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                            "image": "city"
                         }
                     ]
                 }, 
@@ -78,17 +77,14 @@
                     "tpg": [
                         {
                             "portal": "portal2",
-                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20", 
                             "image": "writers"
                         }, 
                         {
                             "portal": "portal2",
-                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
                             "image": "writers"
                         }, 
                         {
                             "portal": "portal2",
-                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
                             "image": "wood"
                         }
                     ] 
@@ -103,7 +99,6 @@
                     "tpg": [
                         {
                             "portal": "portal1",
-                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
                             "image": "cement"
                         }
                     ]

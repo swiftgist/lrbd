@@ -27,8 +27,7 @@ Source0: lrbd-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-root
 BuildArch: noarch
 Requires: python-netifaces
-Requires: targetcli >= 2.1-8
-Requires: python-rtslib >= 2.2-21
+Requires: targetcli >= 2.1-103
 Summary: Configures iSCSI access to Ceph rbd images
 
 %description

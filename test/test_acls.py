@@ -8,6 +8,7 @@ class AclsTestCase(unittest.TestCase):
 
     def setUp(self):
         Common.config['iqns'] = [ "iqn.xyz" ]
+        Common.config['auth'] = [ { "host": "igw1", "authentication": "acls" } ]
         Common.config['portals'] = [ { "name": "portal1",
                                      "addresses": [
                                          "172.16.1.16"
@@ -40,28 +41,19 @@ class AclsTestCase(unittest.TestCase):
         self.a = mock_Acls()
         assert self.a.called == "iqn.xyz 1 iqn.abc"
 
-    @raises(ValueError)
-    def test_acls_exception(self):
-        Common.config['pools'] = [
-                { "pool": "rbd",
-                  "gateways": [
-                    { "host": "igw1", "tpg": [
-                        { "image": "archive", 
-                          "portal": "portal1" }
-                        ]
-                    } ]
-                } ] 
-
+    @raises(AttributeError)
+    def test_tpg(self):
+        Common.config['auth'] = [ { "host": "igw1", "authentication": "tpg" } ]
         class mock_Acls(Acls):
-
 
             def _find(self):
                 pass
 
             def _cmd(self, target, tpg, initiator):
-                self.called = " ".join([ target, str(tpg), initiator ])
+                self.called = True
 
         self.a = mock_Acls()
+        self.a.called
 
     @mock.patch('glob.glob')
     def test_find(self, mock_subproc_glob):
@@ -92,11 +84,11 @@ class AclsTestCase(unittest.TestCase):
 
         class mock_Acls(Acls):
 
-
             def _find(self):
                 pass
 
         self.a = mock_Acls()
+        print self.a.cmds
         assert self.a.cmds == [['targetcli', '/iscsi/iqn.xyz/tpg1/acls', 'create', 'iqn.abc']]
 
     @mock.patch('lrbd.popen')

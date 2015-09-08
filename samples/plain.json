@@ -23,8 +23,7 @@
                     "host": "igw1", 
                     "tpg": [
                         {
-                            "image": "archive",
-                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+                            "image": "archive"
                         }
                     ]
                 } 

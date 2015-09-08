@@ -135,6 +135,20 @@ def uniq(cmds):
         c.append(k.split())
     return(c)
 
+def find_auth(key):
+    """
+    Search for the matching host or target and return the authentication value
+
+        key - string, host or target
+    """
+    for entry in Common.config['auth']:
+        if ('host' in entry and entry['host'] == key):
+            return(entry['authentication'])
+        if ('target' in entry and entry['target'] == key):
+            return(entry['authentication'])
+    logging.warning("{} not found in auth".format(key))
+    return("")
+            
 class Common:
     """
     Sharing common static configurations. 
@@ -642,7 +656,6 @@ class Targets:
         for entry in self.targets:
             if 'hosts' in entry:
                 for hentry in entry['hosts']:
-                    #if (Common.hostname == hentry['host']):
                     portals.append(hentry['portal'])
         return(portals)
 
@@ -1021,7 +1034,11 @@ class Iscsi:
         self.cmds = []
         self.iqns = []
         for entry in Common.config['targets']:
-            self.iqns.append(entry['target'])
+            # Keep the host entry at the front of the list
+            if 'host' in entry:
+                self.iqns.insert(0, entry['target'])
+            else:
+                self.iqns.append(entry['target'])
             if 'hosts' in entry and Runtime.config['backstore'] == "iblock":
                 logging.warning("Multiple gateway targets not supported with iblock backend, use rbd backend\n") 
 
@@ -1141,14 +1158,20 @@ class TPGs:
             entry - a dict containing portal, initiator and image keys 
             target - target iqn 
         """
-        if ('portal' in entry and 
-            not entry['portal'] in self.portals[target]):
-            self._check_portal(entry['portal'])
-            self.portals[target][entry['portal']] = self.tpg[target]
+        if 'portal' in entry:
+            if not entry['portal'] in self.portals[target]:
+                self._check_portal(entry['portal'])
+                self.portals[target][entry['portal']] = self.tpg[target]
+                self.tpg[target] += 1 
+                self.cmds.append(self._cmd(target, 
+                                 self.portals[target][entry['portal']]))
+                logging.debug("Adding TPG {} for target {}".format(self.portals[target][entry['portal']], target))
+        else:
+            self.portals[target]['default'] = self.tpg[target]
             self.tpg[target] += 1 
             self.cmds.append(self._cmd(target, 
-                             self.portals[target][entry['portal']]))
-            logging.debug("Adding TPG {} for target {}".format(self.portals[target][entry['portal']], target))
+                             self.portals[target]['default']))
+            logging.debug("Adding TPG {} for target {}".format(self.portals[target]['default'], target))
 
                     
     def _check_portal(self, name):
@@ -1255,9 +1278,12 @@ class Portals:
             name - name of portal
         """
         found = False
+        if (name == "default"):
+            found = True
         for entry in Common.config['portals']:
             if entry['name'] == name:
                 found = True
+        
         if not found:
             raise ValueError("portal {} missing from portals section".format(name))
             
@@ -1323,7 +1349,7 @@ class Luns:
         Scan paths for existing luns and save lun name to list
         """
         for pentry, gentry, entry in entries():
-            target = iqn(entry)
+            target = iqn(gentry)
             udev_paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/lun/lun_*/*/udev_path".format(target))
             if not target in self.exists:
                 self.exists[target] = {}
@@ -1333,6 +1359,7 @@ class Luns:
                 if not tpg in self.exists[target]:
                     self.exists[target][tpg] = []
                 self.exists[target][tpg].append(basename(contents))
+      
 
     def _cmd(self, target, tpg, image):
         """
@@ -1374,19 +1401,22 @@ class Map:
 
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
-            if 'target' in gentry:
-                for portal in Runtime.config['portals'][target].keys():
-                    tpg = Runtime.config['portals'][target][portal]
-                    lun = self._lun(target, tpg, entry['image'])
-                    self._check(target, tpg, entry['initiator'])
-                    self._cmd(target, tpg, entry['initiator'], lun)
-                    logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
-            else:
-                tpg = Runtime.tpg(target, entry)
-                lun = self._lun(target, tpg, entry['image'])
-                self._check(target, tpg, entry['initiator'])
-                self._cmd(target, tpg, entry['initiator'], lun)
-                logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
+            if 'initiator' in entry:
+                if 'target' in gentry:
+                    if find_auth(gentry['target']) == "acls":
+                        for portal in Runtime.config['portals'][target].keys():
+                            tpg = Runtime.config['portals'][target][portal]
+                            lun = self._lun(target, tpg, entry['image'])
+                            self._check(target, tpg, entry['initiator'])
+                            self._cmd(target, tpg, entry['initiator'], lun)
+                            logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
+                else:
+                    if find_auth(gentry['host']) == "acls":
+                        tpg = Runtime.tpg(target, entry)
+                        lun = self._lun(target, tpg, entry['image'])
+                        self._check(target, tpg, entry['initiator'])
+                        self._cmd(target, tpg, entry['initiator'], lun)
+                        logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
               
 
     def _lun(self, target, tpg, image):
@@ -1453,22 +1483,23 @@ class Acls:
 
         self._find()
         for pentry, gentry, entry in entries():
-            if not 'initiator' in entry:
-                raise ValueError("initiator missing from host {}".format(gentry['host']))
-            target = iqn(gentry)
-            if 'target' in gentry:
-                for portal in Runtime.config['portals'][target].keys():
-                    tpg = str(Runtime.config['portals'][target][portal])
-                    if not (target in self.exists and
-                            tpg in self.exists[target] and
-                            entry['initiator'] in self.exists[target][tpg]):
-                        self._cmd(target, tpg, entry['initiator'])
-            else:
-                tpg = str(Runtime.tpg(target, entry))
-                if not (target in self.exists and 
-                        tpg in self.exists[target] and
-                        entry['initiator'] in self.exists[target][tpg]):
-                    self._cmd(target, tpg, entry['initiator'])
+            if 'initiator' in entry:
+              target = iqn(gentry)
+              if 'target' in gentry:
+                  if find_auth(gentry['target']) == "acls":
+                      for portal in Runtime.config['portals'][target].keys():
+                          tpg = str(Runtime.config['portals'][target][portal])
+                          if not (target in self.exists and
+                                  tpg in self.exists[target] and
+                                  entry['initiator'] in self.exists[target][tpg]):
+                              self._cmd(target, tpg, entry['initiator'])
+              else:
+                  if find_auth(gentry['host']) == "acls":
+                      tpg = str(Runtime.tpg(target, entry))
+                      if not (target in self.exists and 
+                              tpg in self.exists[target] and
+                              entry['initiator'] in self.exists[target][tpg]):
+                          self._cmd(target, tpg, entry['initiator'])
                     
     def _find(self):
         """
@@ -1488,6 +1519,7 @@ class Acls:
                             self.exists[target][tpg] = []
                         self.exists[target][tpg].append(basename(path))
                         
+
 
     def _cmd(self, target, tpg, initiator):
         """
@@ -1564,7 +1596,7 @@ class Auth:
            (demo_mode_write_protect == "0")):
             return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=0", "demo_mode_write_protect=0" ] 
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=0", "demo_mode_write_protect=0", "generate_node_acls=1" ]
         return(cmd)
 
     def select_discovery(self):
@@ -1778,7 +1810,7 @@ class Auth:
         keys = [ 'userid', 'password']
         check_keys(keys, self.acl, "acl")
 
-        path = TARGET + "/iscsi/{}/tpgt_{}/acls/{}/auth".format(self.target, self.tpg, acl['initiator'])
+        path = TARGET + "/iscsi/{}/tpgt_{}/acls/{}/auth".format(self.target, self.tpg, self.acl['initiator'])
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
@@ -1786,9 +1818,9 @@ class Auth:
         if compare_settings(keys, current, self.acl):
             return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(self.target, self.tpg, acl['initiator']), "set", "auth", 
-                 "userid={}".format(acl['userid']),
-                 "password={}".format(acl['password']), ] 
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(self.target, self.tpg, self.acl['initiator']), "set", "auth", 
+                 "userid={}".format(self.acl['userid']),
+                 "password={}".format(self.acl['password']), ] 
         return(cmd)
 
     def set_acls_mutual(self):
@@ -1810,11 +1842,11 @@ class Auth:
         if compare_settings(keys, current, self.acl):
             return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(self.target, self.tpg, acl['initiator']), "set", "auth", 
-                 "userid={}".format(acl['userid']),
-                 "password={}".format(acl['password']), 
-                 "userid_mutual={}".format(acl['userid_mutual']),
-                 "password_mutual={}".format(acl['password_mutual']) ] 
+        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(self.target, self.tpg, self.acl['initiator']), "set", "auth", 
+                 "userid={}".format(self.acl['userid']),
+                 "password={}".format(self.acl['password']), 
+                 "userid_mutual={}".format(self.acl['userid_mutual']),
+                 "password_mutual={}".format(self.acl['password_mutual']) ] 
         return(cmd)
 
     def set_acls_mode(self):

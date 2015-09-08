@@ -9,6 +9,7 @@ class MapTestCase(unittest.TestCase):
     def setUp(self):
         Common.config = {
             "iqns": [ "iqn.xyz" ],
+            "auth": [ { "host": "igw1", "authentication": "acls" } ],
             "pools": [
                 { "pool": "rbd",
                   "gateways": [
