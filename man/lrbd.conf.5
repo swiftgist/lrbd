@@ -1,6 +1,6 @@
 .TH lrbd 5 
 .SH NAME
-lrbd.conf \- configuration object for Ceph rbd images
+lrbd.conf \- configuration object for Ceph RBD images
 .SH DESCRIPTION
 The 
 .B lrbd.conf
@@ -27,10 +27,10 @@ and
 .I _target.
 The hostname and target extended attributes contain the pool configuration.  
 .SS POOLS
-Ceph pools may contain objects and RBD images.  An RBD image can be mounted
-to a gateway host, shared via an iSCSI target and accessed by an iSCSI 
+Ceph pools may contain objects and RBD images.  An RBD image can be mapped
+by a gateway host, shared via an iSCSI target and accessed by an iSCSI 
 initiator.  Likewise, multiple pools may contain multiple RBD images, which
-can be mounted to multiple gateways and accessed by multiple initiators.
+can be mapped by multiple gateways and accessed by multiple initiators.
 Additionally, gateways may grant access across multiple network paths or 
 portals. The following JSON structure represents the pool configuration:
 .PP
@@ -73,7 +73,7 @@ portals. The following JSON structure represents the pool configuration:
 ],
 .RS 0
 "target": 
-.I target
+.I target_iqn
 ,
 .RS 0
 "tpg": [ 
