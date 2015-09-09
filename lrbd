@@ -1043,6 +1043,7 @@ class Iscsi:
                 logging.warning("Multiple gateway targets not supported with iblock backend, use rbd backend\n") 
 
         self._gen_wwn()
+        self._assign_vendor()
 
         base = [ "targetcli", "/iscsi", "create" ]
 
@@ -1076,6 +1077,21 @@ class Iscsi:
                     except IOError, e:
                         # Already in use
                         pass
+
+    def _assign_vendor(self):
+        """
+        Add branding 
+        """
+        for pentry, gentry, entry in entries():
+            path = glob.glob(TARGET + "/core/{}_*/{}/wwn/vendor_id".format(Runtime.config['backstore'], entry['image']))
+            if (path and os.path.isfile("/etc/SuSE-release")):
+                try:
+                    vendor = open(path[0], "w")
+                    vendor.write("SUSE\n")
+                    vendor.close()
+                except IOError, e:
+                    # Already in use
+                    pass
 
 
     def create(self):

@@ -7,15 +7,25 @@ class IscsiTestCase(unittest.TestCase):
 
     def test_iscsi_default(self):
         Common.config = { "targets": [] }
-        self.i = Iscsi()
+        class mock_Iscsi(Iscsi):
+            def _gen_wwn(self):
+                pass
+            def _assign_vendor(self):
+                pass
+        self.i = mock_Iscsi()
         print self.i.cmds
         assert self.i.cmds == [['targetcli', '/iscsi', 'create' ]]
 
     def test_iscsi_defined_target(self):
         Common.config = { "targets": [ { "host": "igw1", 
                                          "target": "iqn.xyz" } ] }
-        TARGET = "/nothing"
-        self.i = Iscsi()
+        class mock_Iscsi(Iscsi):
+            def _gen_wwn(self):
+                pass
+            def _assign_vendor(self):
+                pass
+
+        self.i = mock_Iscsi()
         assert self.i.cmds == [['targetcli', '/iscsi', 'create', 'iqn.xyz' ]]
 
     @mock.patch('lrbd.popen')
@@ -24,7 +34,12 @@ class IscsiTestCase(unittest.TestCase):
         Common.config = { "targets": [ { "host": "igw1", 
                                          "target": "iqn.xyz" } ] }
         mock_subproc_glob.return_value = [ "/some/path/name" ]
-        self.i = Iscsi()
+        class mock_Iscsi(Iscsi):
+            def _gen_wwn(self):
+                pass
+            def _assign_vendor(self):
+                pass
+        self.i = mock_Iscsi()
         self.i.create()
         assert (mock_subproc_popen.called and 
                 Common.config['iqns'] == [ "iqn.xyz" ])
@@ -33,7 +48,12 @@ class IscsiTestCase(unittest.TestCase):
     def test_create(self, mock_subproc_popen):
         Common.config = { "targets": [ { "host": "igw1", 
                                          "target": "iqn.xyz" } ] }
-        self.i = Iscsi()
+        class mock_Iscsi(Iscsi):
+            def _gen_wwn(self):
+                pass
+            def _assign_vendor(self):
+                pass
+        self.i = mock_Iscsi()
         self.i.create()
         assert mock_subproc_popen.called
 
