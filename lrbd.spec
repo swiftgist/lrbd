@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 0.9.10
+Version: 1.0.0
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
@@ -27,6 +27,9 @@ Source0: lrbd-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-root
 BuildArch: noarch
 Requires: python-netifaces
+Requires: python-rados
+Requires: python-rbd
+Requires: ceph-common
 Requires: targetcli >= 2.1-103
 Summary: Configures iSCSI access to Ceph rbd images
 
