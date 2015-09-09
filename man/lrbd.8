@@ -120,9 +120,9 @@ $ vi /tmp/tpg.json
 $ lrbd -f /tmp/tpg.json
 .fi
 .if n \{\
+.sp
 .RE
 .\}
-.sp
 Edit the current configuration with the editor joe
 .sp
 .if n \{\
@@ -130,6 +130,19 @@ Edit the current configuration with the editor joe
 .\}
 .nf
 $ lrbd -E joe
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+.sp
+Display the configuration for another host on the current gateway.
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ lrbd -H gateway2 -l
 .fi
 .if n \{\
 .RE

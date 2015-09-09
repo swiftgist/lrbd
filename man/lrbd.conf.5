@@ -63,7 +63,7 @@ portals. The following JSON structure represents the pool configuration:
 .I portal_group
 ,
 .RS 0
-"iqn":
+"initiator":
 .I initiator_iqn
 .RE
 .RE
@@ -289,7 +289,7 @@ The names of the groups are arbitrary and can be set to anything meaningful.
 Any addresses not available on a host are placed in a separate TPG.  This 
 remote TPG is disabled, but will advertise all the addresses for a given
 target.  This is how high availability can be achieved for an iSCSI initiator
-across multiple gateways.
+across multiple gateways.  
 .PP
 The portal structure is stored in the extended attribute
 .B portals.

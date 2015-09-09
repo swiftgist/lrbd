@@ -18,7 +18,7 @@ For the impatient, follow the instructions for the simplest configuration of one
 `# rbd -p swimming create raft --size 2048`
 * Create an initial configuration  
 `# lrbd -e`
-* Replace *archive* with *raft* and *rbd* with *swimming*.  Replace the initiator value with your client's setting. (See /etc/iscsi/initiatorname.iscsi on Linux.) Save the file.  Run lrbd using an iblock backstore.  
+* Replace *archive* with *raft* and *rbd* with *swimming*.  Remove the initiator (and the comma from the previous line).  Save the file.  Run lrbd using an iblock backstore.  
 `# lrbd -I`
 * Inspect with targetcli  
 `# targetcli ls`
@@ -29,9 +29,12 @@ For the impatient, follow the instructions for the simplest configuration of one
 * Login  
 `# iscsiadm -m node -p `*gateway_address*` --login`
 * Find device   
+`# multipath -ll`
 * Format, write data, read data
 * Logout  
 `# iscsiadm -m node -p `*gateway_address*` --logout`
+* Delete discovery cache  
+`# iscsiadm -m node -o delete`
 
 ### From gateway
 1. From the gateway, clear the configuration  
