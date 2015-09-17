@@ -163,7 +163,7 @@ class Runtime:
 
     @staticmethod
     def tpg(target, entry):
-        return(Runtime.config['portals'][target][entry['portal']] 
+        return(Runtime.config['portals'][target][entry['image']][entry['portal']] 
                     if 'portal' in entry else 1)
 
 class Content:
@@ -389,6 +389,19 @@ class Content:
             for pool in self.submitted['pools']: 
                 self.attr.remove_auth(str(pool['pool']))
 
+        if ('auth' in self.current and self.current['auth'] 
+            and 'auth' in self.submitted and self.submitted['auth']):
+            for old in self.current['auth']:
+                found = False
+                for new in self.submitted['auth']:
+                    if old['host'] == new['host']:
+                        found = True
+                if not found:
+                    for pool in self.submitted['pools']: 
+                        logging.debug("removing {} from {}".format(old['host'], pool['pool']))
+                        self.attr.remove_auth(str(pool['pool']), old['host'])
+                    
+
     def _write_host(self, pool, gateway):
         """
         Write a host entry
@@ -526,16 +539,17 @@ class Attributes:
             ioctx.rm_xattr(Common.config_name, attr)
             logging.debug("Removing {} from pool {}".format(attr, pool))
 
-    def remove_auth(self, pool):
+    def remove_auth(self, pool, host=""):
         """
         Remove authentication attributes for a pool
 
             pool - a string, name of Ceph pool
+            host - a string, specific host to remove. Empty string matches all.
         """
         conn = Ioctx(self.cluster, pool)
         with conn as ioctx:
             for key, value in ioctx.get_xattrs(Common.config_name):
-                if (key[0] == "_"):
+                if (not host and key[0] == "_") or (key == ("_" + host)):
                     ioctx.rm_xattr(Common.config_name, key)
                     logging.debug("Removing {} from pool {}".format(key, pool))
 
@@ -641,6 +655,8 @@ class Targets:
         """
         targets = []
         for entry in self.targets:
+            if not 'target' in entry:
+                raise RuntimeError("Missing keyword target from entry in targets section.")
             if 'hosts' in entry:
                 for hentry in entry['hosts']:
                     if (Common.hostname == hentry['host']):
@@ -968,9 +984,10 @@ class Backstores:
             existing = glob.glob(TARGET + "/core/*/{}".format(entry['image']))
             if existing:
                 self.selected = re.split("[/_]", existing[0])[6]
-            else:
-                # default
-                self.selected = "rbd"
+
+        if not hasattr(self, 'selected'):
+            # default
+            self.selected = "rbd"
 
     def _cmd(self):
         """
@@ -1057,6 +1074,7 @@ class Iscsi:
         else:
             cmd = base
             self.cmds.append(cmd)
+            logging.warning("No matching host found, generating dynamic target\n") 
 
     def _gen_wwn(self):
         """
@@ -1139,16 +1157,19 @@ class TPGs:
         """
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
-            if not target in self.tpg:
+            if (not target in self.tpg or not 'initiator' in entry):
                 self.tpg[target] = 1
+                logging.debug("Initializing target {}".format(target))
             if not target in self.portals:
                 self.portals[target] = {}
+            if not entry['image'] in self.portals[target]:
+                self.portals[target][entry['image']] = {}
             if 'target' in gentry:
-                self._add_target(target)
+                self._add_target(target, entry['image'])
             else:
                 self._add_host(entry, target)
 
-    def _add_target(self, target):
+    def _add_target(self, target, image):
         """
         Adds a TPG for each portal on this host.  Effectively multiplies the
         number of defined groups of TPGs by the number of portal groups.  Each
@@ -1160,12 +1181,12 @@ class TPGs:
         for tentry in Common.config['targets']:
             if target == tentry['target']:
                 for hentry in tentry['hosts']:
-                    if not hentry['portal'] in self.portals[target]:
-                        self.portals[target][hentry['portal']] = self.tpg[target]
+                    if not hentry['portal'] in self.portals[target][image]:
+                        self.portals[target][image][hentry['portal']] = self.tpg[target]
                         self.tpg[target] += 1 
                         self.cmds.append(self._cmd(target, 
-                                         self.portals[target][hentry['portal']]))
-                        logging.debug("Adding TPG {} for target {}".format(self.portals[target][hentry['portal']], target))
+                                         self.portals[target][image][hentry['portal']]))
+                        logging.debug("Adding TPG {} for target {}".format(self.portals[target][image][hentry['portal']], target))
                     
     def _add_host(self, entry, target):
         """
@@ -1175,19 +1196,34 @@ class TPGs:
             target - target iqn 
         """
         if 'portal' in entry:
-            if not entry['portal'] in self.portals[target]:
+            allocated_tpg = self._search_allocated_portals(entry['portal'], target, entry['image'])
+            if allocated_tpg:
+                self.portals[target][entry['image']][entry['portal']] = allocated_tpg
+
+            if not entry['portal'] in self.portals[target][entry['image']]:
                 self._check_portal(entry['portal'])
-                self.portals[target][entry['portal']] = self.tpg[target]
+                self.portals[target][entry['image']][entry['portal']] = self.tpg[target]
                 self.tpg[target] += 1 
                 self.cmds.append(self._cmd(target, 
-                                 self.portals[target][entry['portal']]))
-                logging.debug("Adding TPG {} for target {}".format(self.portals[target][entry['portal']], target))
+                                 self.portals[target][entry['image']][entry['portal']]))
+                logging.debug("Adding TPG {} for target {}".format(self.portals[target][entry['image']][entry['portal']], target))
         else:
-            self.portals[target]['default'] = self.tpg[target]
+            self.portals[target][entry['image']]['default'] = self.tpg[target]
             self.tpg[target] += 1 
             self.cmds.append(self._cmd(target, 
-                             self.portals[target]['default']))
-            logging.debug("Adding TPG {} for target {}".format(self.portals[target]['default'], target))
+                             self.portals[target][entry['image']]['default']))
+            logging.debug("Adding TPG {} for target {}".format(self.portals[target][entry['image']]['default'], target))
+
+    def _search_allocated_portals(self, name, target, image):
+        """
+        """
+        for image in self.portals[target].keys():
+            for portal in self.portals[target][image].keys():
+                if name == portal:
+                    return(self.portals[target][image][portal])
+        return(False)
+                    
+        
 
                     
     def _check_portal(self, name):
@@ -1207,14 +1243,15 @@ class TPGs:
         Disable TPG and disable tpg_enabled_sendtargets.
         """
         for target in self.portals.keys():
-            for name in self.portals[target].keys():
-                for entry in Common.config['portals']:
-                    if name == entry['name']:
-                        for address in entry['addresses']:
-                            addr = re.split(" ", address)[0]
-                            if not addr in Runtime.config['addresses']:
-                                self._disable_tpg(target, 
-                                    self.portals[target][name])
+            for image in self.portals[target].keys():
+                for name in self.portals[target][image].keys():
+                    for entry in Common.config['portals']:
+                        if name == entry['name']:
+                            for address in entry['addresses']:
+                                addr = re.split(" ", address)[0]
+                                if not addr in Runtime.config['addresses']:
+                                    self._disable_tpg(target, 
+                                        self.portals[target][image][name])
 
 
     def _disable_tpg(self, target, tpg):
@@ -1265,13 +1302,13 @@ class Portals:
         self.luns = []
 
         if 'portals' in Common.config and Common.config['portals']:
-            for target, portal, entry in self._entries():
+            for target, image, portal, entry in self._entries():
                 if entry['name'] == portal:
                     for address in entry['addresses']:
                         self._cmd(target, 
-                            Runtime.config['portals'][target][portal], 
+                            Runtime.config['portals'][target][image][portal], 
                             address)
-                        logging.debug("Adding address {} to tpg {} under target {}".format(address, Runtime.config['portals'][target][portal], target))
+                        logging.debug("Adding address {} to tpg {} under target {}".format(address, Runtime.config['portals'][target][image][portal], target))
         else:
             self._cmd(iqn({}), "1", "")
                         
@@ -1281,10 +1318,11 @@ class Portals:
         Generator
         """
         for target in Runtime.config['portals'].keys():
-            for portal in Runtime.config['portals'][target]:
-                self._check(portal)
-                for entry in Common.config['portals']:
-                    yield(target, portal, entry)
+            for image in Runtime.config['portals'][target]:
+                for portal in Runtime.config['portals'][target][image]:
+                    self._check(portal)
+                    for entry in Common.config['portals']:
+                        yield(target, image, portal, entry)
 
 
     def _check(self, name):
@@ -1322,7 +1360,8 @@ class Portals:
         Execute saved commands.  Skip redundant commands from multiple image
         entries.
         """
-        for cmd in uniq(self.cmds):
+        #for cmd in uniq(self.cmds):
+        for cmd in self.cmds:
             popen(cmd)
 
 class Luns:
@@ -1344,14 +1383,16 @@ class Luns:
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
             if 'target' in gentry:
-                for portal in Runtime.config['portals'][target].keys():
-                    tpg = str(Runtime.config['portals'][target][portal])
+                for image in Runtime.config['portals'][target].keys():
+                    if image == entry['image']:
+                        for portal in Runtime.config['portals'][target][image].keys():
+                            tpg = str(Runtime.config['portals'][target][image][portal])
                    
-                    if not (target in self.exists and 
-                            tpg in self.exists[target] and
-                            entry['image'] in self.exists[target][tpg]):
-                        self._cmd(target, tpg, entry['image'])
-                        logging.debug("Adding lun for image {} to tpg {} under target {}".format(entry['image'], tpg, target))
+                            if not (target in self.exists and 
+                                    tpg in self.exists[target] and
+                                    entry['image'] in self.exists[target][tpg]):
+                                self._cmd(target, tpg, entry['image'])
+                                logging.debug("Adding lun for image {} to tpg {} under target {}".format(entry['image'], tpg, target))
             else:
                 tpg = str(Runtime.tpg(target, entry))
                 if not (target in self.exists and 
@@ -1420,12 +1461,14 @@ class Map:
             if 'initiator' in entry:
                 if 'target' in gentry:
                     if find_auth(gentry['target']) == "acls":
-                        for portal in Runtime.config['portals'][target].keys():
-                            tpg = Runtime.config['portals'][target][portal]
-                            lun = self._lun(target, tpg, entry['image'])
-                            self._check(target, tpg, entry['initiator'])
-                            self._cmd(target, tpg, entry['initiator'], lun)
-                            logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
+                        for image in Runtime.config['portals'][target].keys():
+                            if image == entry['image']:
+                                for portal in Runtime.config['portals'][target][image].keys():
+                                    tpg = Runtime.config['portals'][target][image][portal]
+                                    lun = self._lun(target, tpg, entry['image'])
+                                    self._check(target, tpg, entry['initiator'])
+                                    self._cmd(target, tpg, entry['initiator'], lun)
+                                    logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
                 else:
                     if find_auth(gentry['host']) == "acls":
                         tpg = Runtime.tpg(target, entry)
@@ -1503,12 +1546,14 @@ class Acls:
               target = iqn(gentry)
               if 'target' in gentry:
                   if find_auth(gentry['target']) == "acls":
-                      for portal in Runtime.config['portals'][target].keys():
-                          tpg = str(Runtime.config['portals'][target][portal])
-                          if not (target in self.exists and
-                                  tpg in self.exists[target] and
-                                  entry['initiator'] in self.exists[target][tpg]):
-                              self._cmd(target, tpg, entry['initiator'])
+                      for image in Runtime.config['portals'][target].keys():
+                          if image == entry['image']:
+                              for portal in Runtime.config['portals'][target][image].keys():
+                                  tpg = str(Runtime.config['portals'][target][image][portal])
+                                  if not (target in self.exists and
+                                          tpg in self.exists[target] and
+                                          entry['initiator'] in self.exists[target][tpg]):
+                                      self._cmd(target, tpg, entry['initiator'])
               else:
                   if find_auth(gentry['host']) == "acls":
                       tpg = str(Runtime.tpg(target, entry))
@@ -1573,17 +1618,19 @@ class Auth:
                 for target in Runtime.config['portals'].keys():
                     if target == iqn(auth):
                         self.target = target
-                        for portal in Runtime.config['portals'][target].keys():
-                            self.tpg = str(Runtime.config['portals'][target][portal])
-                            self.auth = auth
-                            self.select_auth()
-                            self.cmds.extend(self.select_discovery())
+                        for image in Runtime.config['portals'][target].keys():
+                            for portal in Runtime.config['portals'][target][image].keys():
+                                self.tpg = str(Runtime.config['portals'][target][image][portal])
+                                self.auth = auth
+                                self.select_auth()
+                                self.cmds.extend(self.select_discovery())
         else:
             for target in Runtime.config['portals'].keys():
                 self.target = target
-                for portal in Runtime.config['portals'][target].keys():
-                    self.tpg = str(Runtime.config['portals'][target][portal])
-                    self.cmds.append(self.set_noauth())
+                for image in Runtime.config['portals'][target].keys():
+                    for portal in Runtime.config['portals'][target][image].keys():
+                        self.tpg = str(Runtime.config['portals'][target][image][portal])
+                        self.cmds.append(self.set_noauth())
             self.cmds.append(self.set_discovery_off())
 
     def select_auth(self):

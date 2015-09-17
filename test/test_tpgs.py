@@ -106,7 +106,8 @@ class TPGsTestCase(unittest.TestCase):
 
         self.t = mock_TPGs()
         self.t.portals["iqn.xyz"] = {}
-        self.t.portals["iqn.xyz"]["portal1"] = 1
+        self.t.portals["iqn.xyz"]["archive"] = {}
+        self.t.portals["iqn.xyz"]["archive"]["portal1"] = 1
         self.t.tpg["iqn.xyz"] = 2
         Runtime.config['addresses'] = [ "172.16.1.17" ]
         self.t.disable_remote()

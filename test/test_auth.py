@@ -1,10 +1,18 @@
 
-from lrbd import Auth, Common
+from lrbd import Auth, Common, Runtime
 from nose.tools import  *
 import unittest, mock
 import re, tempfile
 
 class AuthTestCase(unittest.TestCase):
+
+    def setUp(self):
+        Runtime.config = {}
+        Runtime.config['addresses'] = [ "172.16.1.16" ]
+        Runtime.config['portals'] = {}
+        Runtime.config['portals']["iqn.xyz"] = {}
+        Runtime.config['portals']["iqn.xyz"]["archive"] = {}
+        Runtime.config['portals']["iqn.xyz"]["archive"]["portal1"] = "1"
 
     def test_auth_default(self):
         del Common.config['auth']

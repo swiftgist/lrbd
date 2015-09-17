@@ -18,7 +18,7 @@ For the impatient, follow the instructions for the simplest configuration of one
 `# rbd -p swimming create raft --size 2048`
 * Create an initial configuration  
 `# lrbd -e`
-* Replace *archive* with *raft* and *rbd* with *swimming*.  Remove the initiator (and the comma from the previous line).  Save the file.  Run lrbd using an iblock backstore.  
+* Replace *archive* with *raft* and *rbd* with *swimming*.  Remove the initiator (and the comma from the previous line).  Replace the host *igw1* with the result of **uname -n**. Save the file.  Run lrbd using an iblock backstore.  
 `# lrbd -I`
 * Inspect with targetcli  
 `# targetcli ls`

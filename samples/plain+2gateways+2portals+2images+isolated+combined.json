@@ -2,11 +2,25 @@
   "auth": [
         {
           "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
-          "authentication": "tpg", 
-          "tpg": {
+          "authentication": "acls", 
+          "acls": [ 
+            {
+              "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
               "userid": "common1", 
               "password": "pass1"
-          }
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant-too",
+          "authentication": "acls", 
+          "acls": [ 
+            {
+              "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24",
+              "userid": "common2", 
+              "password": "pass2"
+            }
+          ]
         },
         {
             "host": "igw1", 
@@ -21,11 +35,16 @@
       {
         "hosts": [
             { "host": "igw1", "portal": "portal1" },
-            { "host": "igw1", "portal": "portal2" },
-            { "host": "igw2", "portal": "portal3" },
-            { "host": "igw2", "portal": "portal4" }
+            { "host": "igw2", "portal": "portal2" }
         ],
         "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+      },
+      {
+        "hosts": [
+            { "host": "igw1", "portal": "portal3" },
+            { "host": "igw2", "portal": "portal4" }
+        ],
+        "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant-too"
       },
       {
         "host": "igw1",
@@ -58,7 +77,8 @@
           "host": "igw1", 
           "tpg": [
             {
-              "image": "archive"
+              "image": "archive",
+              "portal": "portal1"
             }
           ]
         }, 
@@ -66,9 +86,16 @@
           "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
           "tpg": [
             {
+              "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
               "image": "city"
-            },
+            }
+          ] 
+        }, 
+        {
+          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant-too",
+          "tpg": [
             {
+              "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24",
               "image": "wood"
             }
           ] 

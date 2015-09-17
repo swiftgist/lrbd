@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 1.0.0
+Version: 1.0.1
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
@@ -88,7 +88,7 @@ install -m 644 samples/2gateways+no_authentication.json %{_samples}
 install -m 644 samples/2plain+3gateways+2portals+2images+isolated+no_authentication.json %{_samples}
 install -m 644 samples/3gateways+2portals+2images+isolated+no_authentication.json %{_samples}
 install -m 644 samples/3gateways+no_authentication.json %{_samples}
-install -m 644 samples/plain+2gateways+2portals+2images+isolated+tpg.json %{_samples}
+install -m 644 samples/plain+2gateways+2portals+2images+isolated+combined.json %{_samples}
 
 
 

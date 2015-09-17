@@ -16,7 +16,8 @@ class PortalsTestCase(unittest.TestCase):
         Runtime.config['addresses'] = [ "172.16.1.16" ]
         Runtime.config['portals'] = {}
         Runtime.config['portals']["iqn.xyz"] = {}
-        Runtime.config['portals']["iqn.xyz"]["portal1"] = "1"
+        Runtime.config['portals']["iqn.xyz"]["archive"] = {}
+        Runtime.config['portals']["iqn.xyz"]["archive"]["portal1"] = "1"
 
 
     def test_portal_default(self):
@@ -38,7 +39,7 @@ class PortalsTestCase(unittest.TestCase):
 
 
             def _entries(self):
-                yield("iqn.xyz", "portal1", Common.config['portals'][0])
+                yield("iqn.xyz", "archive", "portal1", Common.config['portals'][0])
 
             def _cmd(self, target, tpg, address):
                 self.called = " ".join([ target, tpg, address ])
@@ -54,13 +55,14 @@ class PortalsTestCase(unittest.TestCase):
         Runtime.config = {}
         Runtime.config['portals'] = {}
         Runtime.config['portals']["iqn.xyz"] = {}
-        Runtime.config['portals']["iqn.xyz"]["portal2"] = "2"
+        Runtime.config['portals']["iqn.xyz"]["archive"] = {}
+        Runtime.config['portals']["iqn.xyz"]["archive"]["portal2"] = "2"
 
         class mock_Portals(Portals):
 
 
             def _entries(self):
-                yield("iqn.xyz", "portal2", Common.config['portals'][0])
+                yield("iqn.xyz", "archive", "portal2", Common.config['portals'][0])
 
             def _cmd(self, target, tpg, address):
                 self.called = " ".join([ target, tpg, address ])
@@ -108,7 +110,8 @@ class PortalsTestCase(unittest.TestCase):
         Runtime.config['addresses'] = [ "172.16.1.17" ]
         Runtime.config['portals'] = {}
         Runtime.config['portals']["iqn.xyz"] = {}
-        Runtime.config['portals']["iqn.xyz"]["portal1"] = "1"
+        Runtime.config['portals']["iqn.xyz"]["archive"] = {}
+        Runtime.config['portals']["iqn.xyz"]["archive"]["portal1"] = "1"
 
         mock_subproc_popen.return_value = []
 
