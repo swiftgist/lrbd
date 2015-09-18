@@ -25,11 +25,11 @@
       },
       {
           "name": "portal2",
-          "addresses": [ "172.16.1.17"  ]
+          "addresses": [ "172.16.2.16"  ]
       },
       {
           "name": "portal3",
-          "addresses": [ "172.16.2.16" ]
+          "addresses": [ "172.16.1.17" ]
       },
       {
           "name": "portal4",
@@ -37,11 +37,11 @@
       },
       {
           "name": "portal5",
-          "addresses": [ "172.16.3.16" ]
+          "addresses": [ "172.16.1.18" ]
       },
       {
           "name": "portal6",
-          "addresses": [ "172.16.3.17" ]
+          "addresses": [ "172.16.2.18" ]
       }
   ],
   "pools": [
