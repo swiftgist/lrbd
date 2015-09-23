@@ -1,7 +1,7 @@
 
-from lrbd import *
+from lrbd import Content
 from nose.tools import  *
-import unittest
+import unittest, mock
 import re, tempfile
 
 class ContentTestCase(unittest.TestCase):
@@ -97,8 +97,34 @@ class ContentTestCase(unittest.TestCase):
         except ValueError, e:
             assert re.match(r"Mandatory key 'host' or 'target' is missing from auth", str(e))
             
+    def test_remove_absent_entry_none(self):
+        data = { "pools": [ { "pool": "rbd", "gateways": [ { "host": "igw1", "tpg": [ { "image": "archive", "initiator": "iqn.xyz" } ] } ] } ] }
+        self.content.current = data
+        self.content.submitted = data
+        class Attributes:
+            called = False
+            def remove(self):
+                self.called = True
+        
+        self.content.attr = Attributes()
 
-    # Need to understand mock to do save
+        self.content._remove_absent_entry()
+        assert not self.content.attr.called
+
+    def test_remove_absent_entry(self):
+        data = { "pools": [ { "pool": "rbd", "gateways": [ { "host": "igw1", "tpg": [ { "image": "archive", "initiator": "iqn.xyz" } ] }, { "host": "igw2", "tpg": [ { "image": "archive", "initiator": "iqn.wxy" } ] } ] } ] }
+        self.content.current = data
+
+        self.content.submitted = { "pools": [ { "pool": "rbd", "gateways": [ { "host": "igw1", "tpg": [ { "image": "archive", "initiator": "iqn.xyz" } ] } ] } ] }
+        class Attributes:
+            called = False
+            def remove(self, pool, key):
+                self.called = True
+        
+        self.content.attr = Attributes()
+
+        self.content._remove_absent_entry()
+        assert self.content.attr.called
 
 
 

@@ -1,15 +1,20 @@
 {
   "auth": [
     {
-      "authentication": "none", 
-      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+        "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
+        "authentication": "tpg+identified",
+        "tpg": {
+            "userid": "common2",
+            "password": "pass1"
+        }
     }
   ], 
   "targets": [
     {
       "hosts": [ 
           { "host": "igw1", "portal": "portal1" },
-          { "host": "igw2", "portal": "portal2" }
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
       ],
       "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
     }
@@ -22,6 +27,10 @@
       {
           "name": "portal2",
           "addresses": [ "172.16.1.17" ]
+      },
+      {
+          "name": "portal3",
+          "addresses": [ "172.16.1.18" ]
       }
   ],
   "pools": [
@@ -32,7 +41,8 @@
           "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
           "tpg": [
             {
-              "image": "city"
+              "image": "city", 
+              "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
             }
           ] 
         } 

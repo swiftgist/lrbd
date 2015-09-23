@@ -64,60 +64,66 @@
             "pool": "rbd",
             "gateways": [
                 {
-                    "host": "igw1", 
+                    "host": "igw1",
                     "tpg": [
                         {
                             "portal": "portal1",
-                            "image": "city"
+                            "image": "city",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
                         }
                     ]
-                }, 
+                },
                 {
-                    "host": "igw2", 
+                    "host": "igw2",
                     "tpg": [
                         {
                             "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
                             "image": "writers"
-                        }, 
+                        },
                         {
                             "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24",
                             "image": "writers"
-                        }, 
+                        },
                         {
                             "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24",
                             "image": "wood"
                         }
-                    ] 
+                    ]
                 }
-            ] 
+            ]
         },
         {
             "pool": "car",
             "gateways": [
                 {
-                    "host": "igw1", 
+                    "host": "igw1",
                     "tpg": [
                         {
                             "portal": "portal1",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
                             "image": "cement"
                         }
                     ]
-                } 
-            ] 
+                }
+            ]
         },
         {
             "pool": "whirl",
             "gateways": [
                 {
-                    "host": "igw2", 
+                    "host": "igw2",
                     "tpg": [
                         {
                             "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
                             "image": "cheese"
                         }
                     ]
-                } 
-            ] 
+                }
+            ]
         }
     ]
 }

@@ -32,8 +32,7 @@
           "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
           "tpg": [
             {
-              "image": "city", 
-              "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+              "image": "city"
             }
           ] 
         } 

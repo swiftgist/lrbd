@@ -13,39 +13,17 @@
         {
             "host": "igw1", 
             "authentication": "tpg", 
-            "discovery": {
-                "auth": "enable", 
-                "userid": "common2", 
-                "password": "pass1", 
-                "mutual": "enable", 
-                "userid_mutual": "target2",
-                "password_mutual": "pass2" 
-            }, 
             "tpg": {
                 "userid": "common2", 
-                "password": "pass1", 
-                "mutual": "enable", 
-                "userid_mutual": "target2",
-                "password_mutual": "pass2" 
+                "password": "pass1"
             }
         }, 
         {
             "host": "igw2", 
             "authentication": "tpg", 
-            "discovery": {
-                "auth": "enable", 
-                "userid": "common1", 
-                "password": "pass1", 
-                "mutual": "enable", 
-                "userid_mutual": "target1",
-                "password_mutual": "pass2" 
-            }, 
             "tpg": {
                 "userid": "common1", 
-                "password": "pass1", 
-                "mutual": "enable", 
-                "userid_mutual": "target1",
-                "password_mutual": "pass2" 
+                "password": "pass1"
             }
         }
     ], 
@@ -68,7 +46,8 @@
                     "tpg": [
                         {
                             "portal": "portal1",
-                            "image": "city"
+                            "image": "city",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
                         }
                     ]
                 }, 
@@ -77,14 +56,17 @@
                     "tpg": [
                         {
                             "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20", 
                             "image": "writers"
                         }, 
                         {
                             "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
                             "image": "writers"
                         }, 
                         {
                             "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24", 
                             "image": "wood"
                         }
                     ] 
@@ -99,6 +81,7 @@
                     "tpg": [
                         {
                             "portal": "portal1",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
                             "image": "cement"
                         }
                     ]
@@ -113,6 +96,7 @@
                     "tpg": [
                         {
                             "portal": "portal2",
+                            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
                             "image": "cheese"
                         }
                     ]

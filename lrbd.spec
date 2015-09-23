@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 1.0.1
+Version: 1.0.2
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
@@ -30,7 +30,7 @@ Requires: python-netifaces
 Requires: python-rados
 Requires: python-rbd
 Requires: ceph-common
-Requires: targetcli >= 2.1-103
+Requires: targetcli >= 2.1-104105
 Summary: Configures iSCSI access to Ceph rbd images
 
 %description
@@ -89,6 +89,11 @@ install -m 644 samples/2plain+3gateways+2portals+2images+isolated+no_authenticat
 install -m 644 samples/3gateways+2portals+2images+isolated+no_authentication.json %{_samples}
 install -m 644 samples/3gateways+no_authentication.json %{_samples}
 install -m 644 samples/plain+2gateways+2portals+2images+isolated+combined.json %{_samples}
+install -m 644 samples/2gateways+tpg+identified.json %{_samples}
+install -m 644 samples/3gateways+tpg+identified.json %{_samples}
+install -m 644 samples/tpg+identified+mutual+discovery+mutual.json %{_samples}
+install -m 644 samples/tpg+identified.json %{_samples}
+
 
 
 

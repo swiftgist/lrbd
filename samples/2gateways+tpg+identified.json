@@ -1,8 +1,12 @@
 {
   "auth": [
     {
-      "authentication": "none", 
-      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+        "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
+        "authentication": "tpg+identified",
+        "tpg": {
+            "userid": "common2",
+            "password": "pass1"
+        }
     }
   ], 
   "targets": [
@@ -32,7 +36,8 @@
           "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
           "tpg": [
             {
-              "image": "city"
+              "image": "city", 
+              "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
             }
           ] 
         } 

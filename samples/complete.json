@@ -12,7 +12,7 @@
     "auth": [
         {
             "host": "igw1", 
-            "authentication": "tpg", 
+            "authentication": "tpg+identified", 
             "discovery": {
                 "auth": "enable", 
                 "userid": "common2", 

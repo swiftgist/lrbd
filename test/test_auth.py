@@ -52,6 +52,90 @@ class AuthTestCase(unittest.TestCase):
         self.a = mock_Auth()
         assert self.a.cmds == ['tpg', 'select_discovery']
 
+    def test_auth_tpg_identified(self):
+        Common.config['auth'] = [ { "authentication": "tpg+identified" } ]
+        class mock_Auth(Auth):
+
+            def select_acls(self):
+                return([ "tpg+identified" ])
+            def select_discovery(self):
+                return([ "select_discovery" ])
+            def _generate_acls(self):
+                pass
+            
+        self.a = mock_Auth()
+        assert self.a.cmds == ['tpg+identified', 'select_discovery']
+
+    def test_generate_acls(self):
+        Common.config['auth'] = [ { "authentication": "tpg+identified", 
+                                    "tpg": { "userid": "common1", 
+                                             "password": "pass1" } 
+                                    } ]
+        class mock_Auth(Auth):
+
+            def select_acls(self):
+                return([ "tpg+identified" ])
+            def select_discovery(self):
+                return([ "select_discovery" ])
+            def _find_tpg_identified_initiators(self):
+                return([ "iqn.abc" ])
+
+        self.a = mock_Auth()
+
+        assert self.a.auth['acls'] == [{'initiator': 'iqn.abc', 'password': 'pass1', 'userid': 'common1'}]
+
+    def test_generate_acls_mutual(self):
+        Common.config['auth'] = [ { "authentication": "tpg+identified", 
+                                    "tpg": { "userid": "common1", 
+                                             "password": "pass1", 
+                                             "mutual": "enable", 
+                                             "userid_mutual": "target1", 
+                                             "password_mutual": "pass2" } 
+                                    } ]
+        class mock_Auth(Auth):
+
+            def select_acls(self):
+                return([ "tpg+identified" ])
+            def select_discovery(self):
+                return([ "select_discovery" ])
+            def _find_tpg_identified_initiators(self):
+                return([ "iqn.abc" ])
+
+        self.a = mock_Auth()
+
+        assert self.a.auth['acls'] == [{'userid_mutual': 'target1', 'initiator': 'iqn.abc', 'userid': 'common1', 'mutual': 'enable', 'password_mutual': 'pass2', 'password': 'pass1'}]
+
+
+    def test_find_tpg_identified_initiators(self):
+        Common.config['auth'] = [ { "authentication": "tpg+identified", 
+                                    "host": "igw1", "tpg": { 
+                                        "userid": "common1", 
+                                        "password": "pass1" } 
+                                    } ]
+
+        Common.config['pools'] = [
+                { "pool": "rbd",
+                  "gateways": [
+                    { "host": "igw1", "tpg": [
+                        { "image": "archive",
+                          "initiator": "iqn.abc",
+                          "portal": "portal1" }
+                        ]
+                    } ]
+                } ]
+
+        class mock_Auth(Auth):
+
+            def select_acls(self):
+                return([ "tpg+identified" ])
+            def select_discovery(self):
+                return([ "select_discovery" ])
+            def _generate_acls(self):
+                pass
+
+        self.a = mock_Auth()
+        assert self.a._find_tpg_identified_initiators() == ['iqn.abc']
+
     def test_auth_acls(self):
         Common.config['auth'] = [ { "authentication": "acls" } ]
         class mock_Auth(Auth):

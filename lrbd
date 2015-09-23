@@ -393,13 +393,16 @@ class Content:
             and 'auth' in self.submitted and self.submitted['auth']):
             for old in self.current['auth']:
                 found = False
-                for new in self.submitted['auth']:
-                    if old['host'] == new['host']:
-                        found = True
-                if not found:
-                    for pool in self.submitted['pools']: 
-                        logging.debug("removing {} from {}".format(old['host'], pool['pool']))
-                        self.attr.remove_auth(str(pool['pool']), old['host'])
+                for key in [ 'host', 'target']:
+                    if key in old:
+                        for new in self.submitted['auth']:
+                            if key in new:
+                                if old[key] == new[key]:
+                                    found = True
+                        if not found:
+                            for pool in self.submitted['pools']: 
+                                logging.debug("removing {} from {}".format(old[key], pool['pool']))
+                                self.attr.remove_auth(str(pool['pool']), old[key])
                     
 
     def _write_host(self, pool, gateway):
@@ -695,7 +698,8 @@ class Authentications:
     """
     Manages the authentication section under the extended attribute auth.
     This section is optional, but relates to gateways and targets 
-    independently.  Authentication can be none, tpg (common credentials) or
+    independently.  Authentication can be none, tpg (common credentials),
+    tpg+identified (common credentials, known initiators) or
     acls (host specific credentials).
     """
 
@@ -969,8 +973,9 @@ class Backstores:
         else:
             self.selected = backstore
 
-        if (self.selected == "rbd"):
-            self._load_modules()
+        # Added to python-rtslib 104105
+        #if (self.selected == "rbd"):
+        #    self._load_modules()
         self._cmd()
         Runtime.config['backstore'] = self.selected
             
@@ -1240,7 +1245,7 @@ class TPGs:
 
     def disable_remote(self):
         """
-        Disable TPG and disable tpg_enabled_sendtargets.
+        Find non-local portals on each tpg and disable
         """
         for target in self.portals.keys():
             for image in self.portals[target].keys():
@@ -1255,17 +1260,20 @@ class TPGs:
 
 
     def _disable_tpg(self, target, tpg):
-            path = TARGET + "/iscsi/{}/tpgt_{}/attrib/tpg_enabled_sendtargets".format(target, tpg)
-            if not os.path.isfile(path):
-                raise RuntimeError("tpg_enabled_sendtargets unsupported, upgrade kernel to 3.12.46-102-default or higher")
-            tes = open(path, "w")
-            tes.write("0")
-            tes.close()
-            logging.debug("Disabling tpg_enabled_sendtargets for tpg {} under target {}".format(tpg, target))
-            tpg_path = TARGET + "/iscsi/{}/tpgt_{}/enable".format(target, tpg)
-            enabled = open(tpg_path).read().rstrip('\n')
-            if (enabled == "1"):
-                popen([ "targetcli", "/iscsi/{}/tpg{}".format(target, tpg), "disable" ])
+        """
+        Disable TPG and disable tpg_enabled_sendtargets.
+        """
+        path = TARGET + "/iscsi/{}/tpgt_{}/attrib/tpg_enabled_sendtargets".format(target, tpg)
+        if not os.path.isfile(path):
+            raise RuntimeError("tpg_enabled_sendtargets unsupported, upgrade kernel to 3.12.46-102-default or higher")
+        tes = open(path, "w")
+        tes.write("0")
+        tes.close()
+        logging.debug("Disabling tpg_enabled_sendtargets for tpg {} under target {}".format(tpg, target))
+        tpg_path = TARGET + "/iscsi/{}/tpgt_{}/enable".format(target, tpg)
+        enabled = open(tpg_path).read().rstrip('\n')
+        if (enabled == "1"):
+            popen([ "targetcli", "/iscsi/{}/tpg{}".format(target, tpg), "disable" ])
 
 
     def _cmd(self, target, tpg):
@@ -1458,24 +1466,30 @@ class Map:
 
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
-            if 'initiator' in entry:
-                if 'target' in gentry:
-                    if find_auth(gentry['target']) == "acls":
-                        for image in Runtime.config['portals'][target].keys():
-                            if image == entry['image']:
-                                for portal in Runtime.config['portals'][target][image].keys():
-                                    tpg = Runtime.config['portals'][target][image][portal]
-                                    lun = self._lun(target, tpg, entry['image'])
-                                    self._check(target, tpg, entry['initiator'])
-                                    self._cmd(target, tpg, entry['initiator'], lun)
-                                    logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
-                else:
-                    if find_auth(gentry['host']) == "acls":
-                        tpg = Runtime.tpg(target, entry)
-                        lun = self._lun(target, tpg, entry['image'])
-                        self._check(target, tpg, entry['initiator'])
-                        self._cmd(target, tpg, entry['initiator'], lun)
-                        logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
+            #if 'initiator' in entry:
+            if 'target' in gentry:
+                if (find_auth(gentry['target']) == "acls" or
+                    find_auth(gentry['target']) == "tpg+identified"):
+                    if not 'initiator' in entry:
+                        raise RuntimeError("Entry for target {} missing initiator for specified authentication {}".format(target, find_auth(gentry['target'])))
+                    for image in Runtime.config['portals'][target].keys():
+                        if image == entry['image']:
+                            for portal in Runtime.config['portals'][target][image].keys():
+                                tpg = Runtime.config['portals'][target][image][portal]
+                                lun = self._lun(target, tpg, entry['image'])
+                                self._check(target, tpg, entry['initiator'])
+                                self._cmd(target, tpg, entry['initiator'], lun)
+                                logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
+            else:
+                if (find_auth(gentry['host']) == "acls" or
+                    find_auth(gentry['host']) == "tpg+identified"):
+                    if not 'initiator' in entry:
+                        raise RuntimeError("Entry for host {} missing initiator for specified authentication {}".format(gentry['host'], find_auth(gentry['host'])))
+                    tpg = Runtime.tpg(target, entry)
+                    lun = self._lun(target, tpg, entry['image'])
+                    self._check(target, tpg, entry['initiator'])
+                    self._cmd(target, tpg, entry['initiator'], lun)
+                    logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
               
 
     def _lun(self, target, tpg, image):
@@ -1542,25 +1556,33 @@ class Acls:
 
         self._find()
         for pentry, gentry, entry in entries():
-            if 'initiator' in entry:
-              target = iqn(gentry)
-              if 'target' in gentry:
-                  if find_auth(gentry['target']) == "acls":
-                      for image in Runtime.config['portals'][target].keys():
-                          if image == entry['image']:
-                              for portal in Runtime.config['portals'][target][image].keys():
-                                  tpg = str(Runtime.config['portals'][target][image][portal])
-                                  if not (target in self.exists and
-                                          tpg in self.exists[target] and
-                                          entry['initiator'] in self.exists[target][tpg]):
-                                      self._cmd(target, tpg, entry['initiator'])
-              else:
-                  if find_auth(gentry['host']) == "acls":
-                      tpg = str(Runtime.tpg(target, entry))
-                      if not (target in self.exists and 
-                              tpg in self.exists[target] and
-                              entry['initiator'] in self.exists[target][tpg]):
-                          self._cmd(target, tpg, entry['initiator'])
+            target = iqn(gentry)
+            if 'target' in gentry:
+                if (find_auth(gentry['target']) == "acls" or 
+                    find_auth(gentry['target']) == "tpg+identified"):
+                    if not 'initiator' in entry:
+                        raise RuntimeError("Entry for target {} missing initiator for specified authentication {}".format(target, find_auth(gentry['target'])))
+
+                    for image in Runtime.config['portals'][target].keys():
+                        if image == entry['image']:
+                            for portal in Runtime.config['portals'][target][image].keys():
+                                tpg = str(Runtime.config['portals'][target][image][portal])
+                                if not (target in self.exists and
+                                        tpg in self.exists[target] and
+                                        entry['initiator'] in self.exists[target][tpg]):
+                                    self._cmd(target, tpg, entry['initiator'])
+                                    logging.debug("Adding initiator {} under tpg {} for target {}".format(entry['initiator'], tpg, target))
+            else:
+                if (find_auth(gentry['host']) == "acls" or
+                    find_auth(gentry['host']) == "tpg+identified"):
+                    if not 'initiator' in entry:
+                        raise RuntimeError("Entry for host {} missing initiator for specified authentication {}".format(gentry['host'], find_auth(gentry['host'])))
+                    tpg = str(Runtime.tpg(target, entry))
+                    if not (target in self.exists and 
+                            tpg in self.exists[target] and
+                            entry['initiator'] in self.exists[target][tpg]):
+                        self._cmd(target, tpg, entry['initiator'])
+                        logging.debug("Adding initiator {} under tpg {} for target {}".format(entry['initiator'], tpg, target))
                     
     def _find(self):
         """
@@ -1641,10 +1663,48 @@ class Auth:
             self.cmds.append(self.set_noauth())
         elif self.auth['authentication'] == "tpg":
             self.cmds.extend(self.select_tpg())
+        elif self.auth['authentication'] == "tpg+identified":
+            self._generate_acls()
+            self.cmds.extend(self.select_acls())
         elif self.auth['authentication'] == "acls":
             self.cmds.extend(self.select_acls())
         else:
             raise ValueError("InvalidAuthentication: authentication must be one of tpg, acls or none")
+
+    def _generate_acls(self):
+        """
+        Create or append to the acls array the common tpg entry for each
+        initiator.  This is technically the same as specifying acls with
+        the same userid/password/etc.  
+        """
+        for initiator in self._find_tpg_identified_initiators():
+            if not 'acls' in self.auth:
+                self.auth['acls'] = []
+            entry = {}
+            entry['initiator'] = initiator
+            entry['userid'] = self.auth['tpg']['userid']
+            entry['password'] = self.auth['tpg']['password']
+
+            if 'mutual' in self.auth['tpg']:
+                entry['mutual'] = self.auth['tpg']['mutual']
+            if 'userid_mutual' in self.auth['tpg']:
+                entry['userid_mutual'] = self.auth['tpg']['userid_mutual']
+            if 'password_mutual' in self.auth['tpg']:
+                entry['password_mutual'] = self.auth['tpg']['password_mutual']
+            self.auth['acls'].append(entry)
+
+    def _find_tpg_identified_initiators(self):
+        """
+        Search for all initiators for current tpg+identified entry
+        """
+        initiators = []
+        for pentry, gentry, entry in entries():
+            for key in [ 'target', 'host']:
+                if (key in self.auth and key in gentry and
+                   self.auth[key] == gentry[key]):
+                    initiators.append(entry['initiator'])
+        return(initiators)
+
 
     def set_noauth(self):
         """
@@ -1757,7 +1817,7 @@ class Auth:
         """
         TPG is optional, can have only mutual disabled or be completely 
         enabled.  Delegate appropriately.  TPG allows a common userid and
-        password for all initiators.
+        password for all initiators. Works for tpg and tpg+identified.
         """
         cmds = []
         if "mutual" in self.auth['tpg']:
@@ -1837,12 +1897,21 @@ class Auth:
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
         generate_node_acls = open(path + "/generate_node_acls").read().rstrip('\n')
         
-        if ((authentication == "1") and
-           (demo_mode_write_protect == "0") and
-           (generate_node_acls  == "1")): 
-            return([])
+        if (self.auth['authentication'] == "tpg"):
+            if ((authentication == "1") and
+               (demo_mode_write_protect == "0") and
+               (generate_node_acls  == "1")): 
+                return([])
 
-        return([ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=1" ]) 
+            return([ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=1" ]) 
+        else:
+            # tpg+identified
+            if ((authentication == "1") and
+               (demo_mode_write_protect == "0") and
+               (generate_node_acls  == "0")): 
+                return([])
+
+            return([ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=0" ]) 
 
     def select_acls(self):
         """
@@ -1928,6 +1997,9 @@ class Auth:
         return([ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=0" ]) 
 
     def create(self):
+        """
+        Execute all the authentication commands
+        """
         for cmd in self.cmds:
             if cmd:
                 popen(cmd)
