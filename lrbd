@@ -18,8 +18,10 @@
 
 import glob, uuid
 import argparse
-import rados, rbd, json
-import sys, tempfile, os
+import rados, json
+import tempfile, os
+#import rados, rbd, json
+#import sys, tempfile, os
 from subprocess import call, Popen, PIPE
 import re, socket
 import pprint
@@ -30,14 +32,11 @@ from collections import OrderedDict
 import logging
 
 
-# CONFIGFS target path
-TARGET="/sys/kernel/config/target"
-
 def popen(cmd):
     """
-    Execute a command, print both stdout and stderr, and exit unless 
+    Execute a command, print both stdout and stderr, and exit unless
     successful.
- 
+
         cmd - an array of strings of the command
     """
     print " ".join(cmd)
@@ -47,9 +46,9 @@ def popen(cmd):
     for line in proc.stderr:
         print line.rstrip('\n')
     proc.wait()
-    if (proc.returncode != 0):
+    if proc.returncode != 0:
         exit(proc.returncode)
-    if (logging.getLogger().level <= logging.INFO):
+    if logging.getLogger().level <= logging.INFO:
         print ""
 
 def strip_comments(text):
@@ -58,15 +57,15 @@ def strip_comments(text):
 
         text - a string
     """
-    return(re.sub(re.compile("#.*?\n" ) ,"" ,text))
-        
+    return re.sub(re.compile("#.*?\n"), "", text)
+
 def lstrip_spaces(text):
     """
-    Remove 12 spaces 
+    Remove 12 spaces
 
         text - a string
     """
-    return(re.sub(re.compile("^ {12}", re.MULTILINE), "", text))
+    return re.sub(re.compile("^ {12}", re.MULTILINE), "", text)
 
 def check_keys(keys, data, description):
     """
@@ -89,25 +88,25 @@ def compare_settings(keys, current, config):
         config - a dict, possible superset of current
     """
     for key in keys:
-        if (current[key] != config[key]):
-            return(False)
-    return(True)
+        if current[key] != config[key]:
+            return False
+    return True
 
 def iqn(entry):
     """
     Return the target iqn if exists, otherwise default to the first iqn listed
-    in the targets section, which is host specific.  
+    in the targets section, which is host specific.
 
         entry - a dictionary, typically an image entry
     """
     if 'target' in entry:
-        return(entry['target'])
+        return entry['target']
     else:
-        return(Common.config['iqns'][0])
+        return Common.config['iqns'][0]
 
 def addresses():
     """
-    Return a list of all ip addresses 
+    Return a list of all ip addresses
     """
     adds = []
     for interface in netifaces.interfaces():
@@ -118,22 +117,22 @@ def addresses():
             for entry in addrs[netifaces.AF_INET6]:
                 # Strip interface
                 adds.append(re.split("%", entry['addr'])[0])
-        except KeyError, e:
+        except KeyError:
             # skip downed interfaces
             pass
-    return(adds)
+    return adds
 
 def uniq(cmds):
     """
     Remove redundant entries from list of lists
     """
-    u = {}
-    c = []
+    dictionary = {}
+    unique = []
     for cmd in cmds:
-        u[" ".join(cmd)] = ''
-    for k in u.keys():
-        c.append(k.split())
-    return(c)
+        dictionary[" ".join(cmd)] = ''
+    for k in dictionary.keys():
+        unique.append(k.split())
+    return unique
 
 def find_auth(key):
     """
@@ -142,95 +141,125 @@ def find_auth(key):
         key - string, host or target
     """
     for entry in Common.config['auth']:
-        if ('host' in entry and entry['host'] == key):
-            return(entry['authentication'])
-        if ('target' in entry and entry['target'] == key):
-            return(entry['authentication'])
+        if 'host' in entry and entry['host'] == key:
+            return entry['authentication']
+        if 'target' in entry and entry['target'] == key:
+            return entry['authentication']
     logging.warning("{} not found in auth".format(key))
-    return("")
-            
-class Common:
+    return ""
+
+class Common(object):
     """
-    Sharing common static configurations. 
+    Sharing common static configurations.
     """
     config = OrderedDict()
 
-class Runtime:
+    config_name = ""
+    ceph_conf = ""
+    hostname = ""
+
+    @staticmethod
+    def assign(sections):
+        """
+        Map sections keys into Common.config
+        """
+        Common.config['auth'] = sections["authentications"].authentications
+        Common.config['targets'] = sections["targets"].targets
+        Common.config['portals'] = sections["portals"].portals
+        Common.config['pools'] = sections["pools"].pools
+
+class Runtime(object):
     """
     Sharing common runtime state.
     """
     config = {}
+    target = "/sys/kernel/config/target"
+    fabric = "iscsi"
 
     @staticmethod
     def tpg(target, entry):
-        return(Runtime.config['portals'][target][entry['image']][entry['portal']] 
-                    if 'portal' in entry else 1)
-
-class Content:
-    """
-    Contains operations for reading, editing and saving the configuration to
-    Ceph. 
-    """
-
-    def __init__(self):
         """
-        The variable self.current holds the JSON structure of the existing 
-        configuration.
+        Returns target portal group for specified target and entry if it
+        exists, otherwise defaults to 1
         """
-        self.current = {}
- 
-    def edit(self, editor):
-        """
-        Edit the global configuration in a text editor.  Submitted changes
-        are validated.  Errors are displayed after an edit session allowing
-        a user to start another edit session or interrupt the program.
-
-            editor - specify another editor, defaults to vim
-        """
-        self.current = Common.config
-        EDITOR = editor if editor else os.environ.get('EDITOR', 
-                                                   '/usr/bin/vim')
-        if (not self.current['auth'] and 
-            not self.current['targets'] and
-            not self.current['pools']):
-            initial_message = self.instructions()
+        if 'portal' in entry:
+            return Runtime.config['portals'][target][entry['image']][entry['portal']]
         else:
-            initial_message = json.dumps(self.current, indent=2)
+            return 1
 
-        with tempfile.NamedTemporaryFile(suffix=".tmp") as tmpfile:
-            tmpfile.write(initial_message)
-            tmpfile.flush()
+    @staticmethod
+    def core(pathname):
+        """
+        Returns composed core path
+        """
+        return glob.glob("{}/{}/{}".format(Runtime.target, "core", pathname))
 
-            valid = False
-            while (not valid):
-                call([EDITOR, tmpfile.name])
-                submitted = strip_comments(open(tmpfile.name).read())
-                valid = (self.validate(submitted) and 
-                         self.verify_mandatory_keys(submitted))
-                if (not valid):
-                    try:
-                        raw_input("Press enter to edit or Ctrl-C to quit ")
-                    except KeyboardInterrupt, e:
-                        raise SystemExit("\nBye")
-            self.submitted = json.loads(submitted, object_pairs_hook=OrderedDict)
+    @staticmethod
+    def path(pathname):
+        """
+        Returns composed path
+        """
+        return glob.glob("{}/{}/{}".format(Runtime.target,
+                                           Runtime.fabric,
+                                           pathname))
+    @staticmethod
+    def targets():
+        """
+        Returns targets
+        """
+        return Runtime.config['portals'].keys()
 
-    def instructions(self):
+    @staticmethod
+    def images(target):
+        """
+        Returns images
+        """
+        return Runtime.config['portals'][target].keys()
+
+    @staticmethod
+    def portals(target, image):
+        """
+        Returns portals
+        """
+        return Runtime.config['portals'][target][image].keys()
+
+    @staticmethod
+    def tpg(target, image, portal):
+        """
+        Returns target portal group
+        """
+        return Runtime.config['portals'][target][image][portal]
+
+
+class InitialContents(object):
+    """
+    Provides the initial contents for the editor
+    """
+    def __init__(self):
+        if (not Common.config['auth'] and
+                not Common.config['targets'] and
+                not Common.config['pools']):
+            self.text = self._instructions()
+        else:
+            self.text = json.dumps(Common.config, indent=2)
+
+    def _instructions(self):
         """
         Initial instructions when no configuration exists
         """
-        return(lstrip_spaces("""#
+        return lstrip_spaces("""#
             #
-            # lrbd stores an iSCSI configuration in Ceph and applies the 
-            # configuration to a host acting as a gateway between Ceph and an 
+            # lrbd stores an iSCSI configuration in Ceph and applies the
+            # configuration to a host acting as a gateway between Ceph and an
             # initiator (i.e. iSCSI client)
             #
-            # Since no configuration exists, the simplest example is provided 
-            # below.  Replace 'rbd', 'igw1', 'archive' and 
-            # 'iqn.1996-04.de.suse:01:abcdefghijkl' with your pool, host, 
+            # Since no configuration exists, the simplest example is provided
+            # below.  Replace 'rbd', 'igw1', 'archive' and
+            # 'iqn.1996-04.de.suse:01:abcdefghijkl' with your pool, host,
             # rbd image name and initator iqn.
             #
-            # Alternatively, check the samples/ subdirectory.  Select the most 
-            # suitable configuration and customize.  Apply your configuration 
+            # Alternatively, check the samples/ subdirectory.  Select the most
+            # suitable configuration and customize.  Apply your configuration
             # with 'lrbd -f <filename>'.  For additional options, run 'lrbd -h'
             #
               {
@@ -240,7 +269,7 @@ class Content:
                       { "host": "igw1",
                         "tpg": [
                           { "image": "archive",
-                            "initiator": "iqn.1996-04.de.suse:01:abcdefghijkl" 
+                            "initiator": "iqn.1996-04.de.suse:01:abcdefghijkl"
                           }
                         ]
                       }
@@ -248,25 +277,85 @@ class Content:
                   }
                 ]
               }
-             
 
-            #\n"""))
 
-    def read(self, file):
+            #\n""")
+
+    def text(self):
+        return self.text
+
+class Content(object):
+    """
+    Contains operations for reading, editing and saving the configuration to
+    Ceph.
+    """
+
+    def __init__(self):
+        """
+        The variable self.current holds the JSON structure of the existing
+        configuration.
+        """
+        self.current = {}
+        self.initial_content = ""
+        self.submitted = ""
+
+    def edit(self, editor):
+        """
+        Edit the global configuration in a text editor.  Submitted changes
+        are validated.  Errors are displayed after an edit session allowing
+        a user to start another edit session or interrupt the program.
+
+            editor - specify another editor, defaults to vim
+        """
+        self.current = Common.config
+        program = editor if editor else os.environ.get('EDITOR',
+                                                       '/usr/bin/vim')
+        self.initial_content = InitialContents()
+
+        with tempfile.NamedTemporaryFile(suffix=".tmp") as tmpfile:
+            tmpfile.write(self.initial_content.text)
+            tmpfile.flush()
+
+            valid = False
+            while not valid:
+                call([program, tmpfile.name])
+                valid, self.submitted = self._check(tmpfile.name)
+                if not valid:
+                    try:
+                        raw_input("Press enter to edit or Ctrl-C to quit ")
+                    except KeyboardInterrupt:
+                        raise SystemExit("\nBye")
+
+
+    def read(self, filename):
         """
         The counterpart to using an editor, this method reads a file directly
         and runs the same validation.
 
             file - a text configuration file
         """
-        if not os.path.isfile(file):
-            raise IOError("file '{}' does not exist".format(file))
-        text = strip_comments(open(file).read())
-        if (self.validate(text) and self.verify_mandatory_keys(text)):
-               self.submitted = json.loads(text, object_pairs_hook=OrderedDict)
+        if not os.path.isfile(filename):
+            raise IOError("file '{}' does not exist".format(filename))
+        valid, self.submitted = self._check(filename)
+        if not valid:
+            raise RuntimeError("file {} failed validation".format(filename))
+
+    def _check(self, filename):
+        """
+        Returns a tuple of whether the file provided is valid and a json
+        structure of its contents
+
+            filename - a string
+        """
+        submitted = strip_comments(open(filename).read())
+        valid = (self.validate(submitted) and
+                 self.verify_mandatory_keys(submitted))
+        if valid:
+            text = json.loads(submitted, object_pairs_hook=OrderedDict)
         else:
-            raise RuntimeError("file {} failed validation".format(file))
-       
+            text = ""
+        return(valid, text)
+
 
     def validate(self, text):
         """
@@ -276,10 +365,10 @@ class Content:
             text - a string of the entire configuration
         """
         try:
-          content = json.loads(text)
-        except ValueError, e:
-          logging.error(e)
-          return False
+            json.loads(text)
+        except ValueError, error:
+            logging.error(error)
+            return False
         return True
 
     def verify_mandatory_keys(self, text):
@@ -298,7 +387,7 @@ class Content:
         if not content['pools'][0]['gateways']:
             raise ValueError("gateways have no entries")
         if not ('host' in content['pools'][0]['gateways'][0] or
-            'target' in content['pools'][0]['gateways'][0]):
+                'target' in content['pools'][0]['gateways'][0]):
             raise ValueError("Mandatory key 'host' or 'target' is missing")
         if not 'tpg' in content['pools'][0]['gateways'][0]:
             raise ValueError("Mandatory key 'tpg' is missing")
@@ -308,17 +397,17 @@ class Content:
             for entry in content['auth']:
                 if not ('host' in entry or 'target' in entry):
                     raise ValueError("Mandatory key 'host' or 'target' is missing from auth")
-        return(True)
+        return True
 
 
-    def save(self):
+    def save(self, conn):
         """
         Write the configuration to Ceph.  Remove any entries that were deleted
         from the submission.  Data is subdivided for simpler host retrieval.
 
         Stores the following attributes:
-            targets - static iqn for each gateway host.  Stored on each 
-                      configuration object in every pool if it exists.  
+            targets - static iqn for each gateway host.  Stored on each
+                      configuration object in every pool if it exists.
             portals - named groups of network addresses
             _<host> - authentication information for gateway host
             _<target> - authentication information for target
@@ -327,111 +416,141 @@ class Content:
         """
         if self.submitted != self.current:
             logging.debug("Saving...")
-            conn = Cluster()
             with conn as cluster:
-                self.attr = Attributes(cluster) 
-                self._remove_absent_entry()
-                self._remove_absent_auth()
+                self.attr = Attributes(cluster)
+                self._remove_deleted()
+                self._update_submitted()
 
-                        
-                for pool in self.submitted['pools']: 
-                    if 'gateways' in pool:
-                        for gateway in pool['gateways']:
-                            self._write_host(pool, gateway)
-                            self._write_target(pool, gateway)
-                    if 'auth' in self.submitted:
-                        self._write_auth(pool)
-                    if 'targets' in self.submitted:
-                        self._write_targets(pool)
-                    if 'portals' in self.submitted:
-                        self._write_portals(pool)
+
+    def _remove_deleted(self):
+        """
+        Remove no longer needed extended attributes
+        """
+        self._remove_absent_entry()
+        self._remove_absent_auth()
+        self._remove_absent_auth_entry()
+
+
+    def _update_submitted(self):
+        """
+        Create or update extended attributes for each section
+        """
+        for pool in self.submitted['pools']:
+            if 'gateways' in pool:
+                for gateway in pool['gateways']:
+                    self._write_host(pool, gateway)
+                    self._write_target(pool, gateway)
+            if 'auth' in self.submitted:
+                self._write_auth(pool)
+            if 'targets' in self.submitted:
+                self._write_targets(pool)
+            if 'portals' in self.submitted:
+                self._write_portals(pool)
 
 
     def _remove_absent_entry(self):
         """
-        Remove host or target entries that have been deleted from the 
+        Remove host or target entries that have been deleted from the
         submitted configuration
         """
         logging.debug("Removing deleted entries")
         hosts = {}
-        if ('pools' in self.current and self.current['pools']):
-            for pool in self.current['pools']: 
+        if 'pools' in self.current and self.current['pools']:
+            for pool in self.current['pools']:
                 hosts[pool['pool']] = []
-                # Add current gateways
-                if 'gateways' in pool:
-                    for gateway in pool['gateways']:
-                        if 'host' in gateway:
-                            hosts[pool['pool']].append(gateway['host'])
-                        if 'target' in gateway:
-                            hosts[pool['pool']].append(gateway['target'])
-            for pool in self.submitted['pools']: 
-                # Subtract submitted gateways, skip new entries
-                if 'gateways' in pool:
-                    for gateway in pool['gateways']:
-                        if ('host' in gateway and
-                            gateway['host'] in hosts[pool['pool']]):
-                            hosts[pool['pool']].remove(gateway['host'])
-                        if ('target' in gateway and 
-                            gateway['target'] in hosts[pool['pool']]):
-                            hosts[pool['pool']].remove(gateway['target'])
-                # Remove difference
-                for host in hosts[pool['pool']]:
-                    self.attr.remove(str(pool['pool']), str(host))
-                    logging.debug("Removing host {} from pool {}".format(host, pool))
+                self._add_current_gateways(pool, hosts)
+            for pool in self.submitted['pools']:
+                self._subtract_submitted_gateways(pool, hosts)
+                self._remove_difference(pool, hosts)
+
+    def _add_current_gateways(self, pool, hosts):
+        """
+        Adds gateways from current configuration
+        """
+        if 'gateways' in pool:
+            for gateway in pool['gateways']:
+                if 'host' in gateway:
+                    hosts[pool['pool']].append(gateway['host'])
+                if 'target' in gateway:
+                    hosts[pool['pool']].append(gateway['target'])
+
+    def _subtract_submitted_gateways(self, pool, hosts):
+        """
+        Subtracts gateways in submitted configuration
+        """
+        if 'gateways' in pool:
+            for gateway in pool['gateways']:
+                if 'host' in gateway and gateway['host'] in hosts[pool['pool']]:
+                    hosts[pool['pool']].remove(gateway['host'])
+                if 'target' in gateway and gateway['target'] in hosts[pool['pool']]:
+                    hosts[pool['pool']].remove(gateway['target'])
+
+    def _remove_difference(self, pool, hosts):
+        """
+        Removes the differences between the current and submitted
+        """
+        for host in hosts[pool['pool']]:
+            self.attr.remove(str(pool['pool']), str(host))
+            logging.debug("Removing host {} from pool {}".format(host, pool))
+
 
     def _remove_absent_auth(self):
         """
-        Remove auth section that has been deleted from the submitted 
+        Remove auth section that has been deleted from the submitted
         configuration
         """
-        if ('auth' in self.current and self.current['auth'] 
-            and not 'auth' in self.submitted):
-            for pool in self.submitted['pools']: 
+        if ('auth' in self.current and self.current['auth'] and
+                not 'auth' in self.submitted):
+            for pool in self.submitted['pools']:
                 self.attr.remove_auth(str(pool['pool']))
 
-        if ('auth' in self.current and self.current['auth'] 
-            and 'auth' in self.submitted and self.submitted['auth']):
+    def _remove_absent_auth_entry(self):
+        """
+        Remove entry from the auth section
+        """
+        if ('auth' in self.current and self.current['auth']
+                and 'auth' in self.submitted and self.submitted['auth']):
             for old in self.current['auth']:
                 found = False
-                for key in [ 'host', 'target']:
+                for key in ['host', 'target']:
                     if key in old:
                         for new in self.submitted['auth']:
                             if key in new:
                                 if old[key] == new[key]:
                                     found = True
                         if not found:
-                            for pool in self.submitted['pools']: 
+                            for pool in self.submitted['pools']:
                                 logging.debug("removing {} from {}".format(old[key], pool['pool']))
                                 self.attr.remove_auth(str(pool['pool']), old[key])
-                    
+
 
     def _write_host(self, pool, gateway):
         """
         Write a host entry
         """
         if 'host' in gateway:
-            self.attr.write(str(pool['pool']), 
-                str(gateway['host']), json.dumps(gateway))
+            self.attr.write(str(pool['pool']),
+                            str(gateway['host']), json.dumps(gateway))
 
     def _write_target(self, pool, gateway):
         """
         Write a target entry
         """
         if 'target' in gateway:
-            self.attr.write(str(pool['pool']), 
-                str(gateway['target']), json.dumps(gateway))
+            self.attr.write(str(pool['pool']),
+                            str(gateway['target']), json.dumps(gateway))
 
     def _write_auth(self, pool):
         """
-        Write authentication entry for host or target 
+        Write authentication entry for host or target
         """
-        for entry in self.submitted['auth']: 
+        for entry in self.submitted['auth']:
             if 'host' in entry:
-                self.attr.write(str(pool['pool']), 
-                    str('_' + entry['host']), json.dumps(entry))
+                self.attr.write(str(pool['pool']),
+                                str('_' + entry['host']), json.dumps(entry))
             elif 'target' in entry:
-                self.attr.write(str(pool['pool']), 
-                    str('_' + entry['target']), json.dumps(entry))
+                self.attr.write(str(pool['pool']),
+                                str('_' + entry['target']), json.dumps(entry))
             else:
                 raise ValueError("auth entry must contain either 'host' or 'target'")
 
@@ -439,17 +558,17 @@ class Content:
         """
         Write targets section
         """
-        self.attr.write(str(pool['pool']), 
-            str('targets'), json.dumps(self.submitted['targets']))
+        self.attr.write(str(pool['pool']),
+                        str('targets'), json.dumps(self.submitted['targets']))
 
     def _write_portals(self, pool):
         """
         Write portals section
         """
-        self.attr.write(str(pool['pool']), 
-            str('portals'), json.dumps(self.submitted['portals']))
+        self.attr.write(str(pool['pool']),
+                        str('portals'), json.dumps(self.submitted['portals']))
 
-class Cluster:
+class Cluster(object):
     """
     Support 'with' for Rados connections
     """
@@ -467,9 +586,9 @@ class Cluster:
         self.cluster = rados.Rados(conffile=Common.ceph_conf)
         try:
             self.cluster.connect()
-        except rados.ObjectNotFound, e:
+        except rados.ObjectNotFound:
             raise IOError("check for missing keyring")
-        return(self.cluster)
+        return self.cluster
 
     def __exit__(self, exc_ty, exc_val, tb):
         """
@@ -477,7 +596,7 @@ class Cluster:
         """
         self.cluster.shutdown()
 
-class Ioctx:
+class Ioctx(object):
     """
     Support 'with' for pool connections
     """
@@ -496,9 +615,9 @@ class Ioctx:
         """
         try:
             self.ioctx = self.cluster.open_ioctx(self.pool)
-        except rados.ObjectNotFound, e:
+        except rados.ObjectNotFound:
             raise RuntimeError("pool '{}' does not exist".format(self.pool))
-        return(self.ioctx)
+        return self.ioctx
 
     def __exit__(self, exc_ty, exc_val, tb):
         """
@@ -506,14 +625,13 @@ class Ioctx:
         """
         self.ioctx.close()
 
-class Attributes:
+class Attributes(object):
     """
     Methods for updating and removing extended attributes within Ceph.
     """
 
     def __init__(self, cluster):
         self.cluster = cluster
-        pass
 
     def write(self, pool, key, attrs):
         """
@@ -533,7 +651,7 @@ class Attributes:
         """
         Remove a specified attribute.  This is necessary when a host has
         been removed from the list of gateways
-  
+
             pool - a string, name of Ceph pool
             attr - a string, name of gateway host
         """
@@ -557,22 +675,23 @@ class Attributes:
                     logging.debug("Removing {} from pool {}".format(key, pool))
 
 
-class Pools:
+#################################################################
+class Pools(object):
     """
-    Manages the entire structure of pools, gateways, tpg and initiators.  
+    Manages the entire structure of pools, gateways, tpg and initiators.
     All hosts are included.
     """
 
     def __init__(self):
         """
-        A list of pools.  Data structure is label : value throughout. 
+        A list of pools.  Data structure is label : value throughout.
         """
         self.pools = []
 
     def add(self, item):
         """
         Creates another pool entry
-        
+
             item - dict (e.g. "pool": "swimming")
         """
         self.pools.append(OrderedDict())
@@ -595,9 +714,9 @@ class Pools:
         """
         pprint.pprint(self.pools)
 
-class PortalSection:
+class PortalSection(object):
     """
-    Manages the portal section of the extended attributes (i.e. all data stored 
+    Manages the portal section of the extended attributes (i.e. all data stored
     under portals).
     """
 
@@ -609,13 +728,16 @@ class PortalSection:
 
     def add(self, item):
         """
-        Add entire structure, identical copies are stored in each pool so 
+        Add entire structure, identical copies are stored in each pool so
         only one is needed.
         """
         if not self.portals and item:
             self.portals.extend(item)
 
     def purge(self, portals):
+        """
+        Remove target entries
+        """
         for entry in self.portals:
             if not entry['name'] in portals:
                 self.portals.remove(entry)
@@ -626,9 +748,9 @@ class PortalSection:
         """
         pprint.pprint(self.portals)
 
-class Targets:
+class Targets(object):
     """
-    Manages the target section of the extended attributes (i.e. all data stored 
+    Manages the target section of the extended attributes (i.e. all data stored
     under targets).
     """
 
@@ -640,7 +762,7 @@ class Targets:
 
     def add(self, item):
         """
-        Add entire structure, identical copies are stored in each pool so 
+        Add entire structure, identical copies are stored in each pool so
         only one is needed.
         """
         if not self.targets and item:
@@ -651,7 +773,7 @@ class Targets:
         Useful for debugging
         """
         pprint.pprint(self.targets)
-     
+
     def list(self):
         """
         Return only iqn values filtered by hostname
@@ -662,21 +784,21 @@ class Targets:
                 raise RuntimeError("Missing keyword target from entry in targets section.")
             if 'hosts' in entry:
                 for hentry in entry['hosts']:
-                    if (Common.hostname == hentry['host']):
+                    if Common.hostname == hentry['host']:
                         targets.append(entry['target'])
-        return(targets)
+        return targets
 
     def portals(self):
         """
         Return only portal values filtered by hostname
-        Return all portal values 
+        Return all portal values
         """
         portals = []
         for entry in self.targets:
             if 'hosts' in entry:
                 for hentry in entry['hosts']:
                     portals.append(hentry['portal'])
-        return(portals)
+        return portals
 
     def purge(self):
         """
@@ -684,8 +806,8 @@ class Targets:
         """
         for entry in self.targets:
             if 'host' in entry:
-                if (Common.hostname != entry['host']):
-                       self.targets.remove(entry)
+                if Common.hostname != entry['host']:
+                    self.targets.remove(entry)
             if 'hosts' in entry:
                 found = False
                 for hentry in entry['hosts']:
@@ -694,10 +816,10 @@ class Targets:
                 if not found:
                     self.targets.remove(entry)
 
-class Authentications:
+class Authentications(object):
     """
     Manages the authentication section under the extended attribute auth.
-    This section is optional, but relates to gateways and targets 
+    This section is optional, but relates to gateways and targets
     independently.  Authentication can be none, tpg (common credentials),
     tpg+identified (common credentials, known initiators) or
     acls (host specific credentials).
@@ -705,14 +827,14 @@ class Authentications:
 
     def __init__(self):
         """
-        List of authentications.  Absent and present but disabled are 
+        List of authentications.  Absent and present but disabled are
         permitted.
         """
         self.authentications = []
 
     def add(self, item):
         """
-        Add entire structure, identical copies are stored in each pool so 
+        Add entire structure, identical copies are stored in each pool so
         only one is needed.
         """
         if not self._exists(item):
@@ -725,17 +847,20 @@ class Authentications:
         """
         present = False
         for entry in self.authentications:
-            for attr in [ 'host', 'target' ]:
+            for attr in ['host', 'target']:
                 if attr in item and attr in entry:
-                    if (item[attr] == entry[attr]):
+                    if item[attr] == entry[attr]:
                         present = True
                         break
-        return(present)
+        return present
 
     def purge(self):
+        """
+        Removes authentication entries for other hosts
+        """
         for entry in self.authentications:
             if 'host' in entry:
-                if (Common.hostname != entry['host']):
+                if Common.hostname != entry['host']:
                     self.authentications.remove(entry)
 
 
@@ -746,9 +871,9 @@ class Authentications:
         pprint.pprint(self.authentications)
 
 
-class Configs:
+class Configs(object):
     """
-    Read the configuration from Ceph for both global and host only 
+    Read the configuration from Ceph for both global and host only
     configurations.  Merges pools, targets and authentications into
     larger structures.  Assigns to Common.* for sharing with other
     classes.
@@ -776,65 +901,34 @@ class Configs:
         Common.ceph_conf = self.ceph_conf
         Common.hostname = self.hostname
 
-    def retrieve(self, filter=None):
+    def retrieve(self, conn, sections, gateways):
         """
         Scan all configuration objects and build a structure containing
-        all gateway hosts.  Merge pools, auth, portals and targets into 
-        Common.config 
+        all gateway hosts.  Merge pools, auth, portals and targets into
+        Common.config
         """
-        conn = Cluster()
         with conn as cluster:
-            p = Pools()
-            pt = PortalSection()
-            t = Targets()
-            a = Authentications()
-
-            portals = []
             for pool in cluster.list_pools():
                 conn = Ioctx(cluster, pool)
                 with conn as ioctx:
-
                     if self._config_missing(ioctx, self.config_name, pool):
                         continue
-                    p.add(pool)
-                    t.add(self._get_optional(ioctx, self.config_name, 'targets'))
-                    pt.add(self._get_optional(ioctx, self.config_name, 'portals'))
-                    
-                    if filter:
-                        targets = t.list()
-                        for portal in t.portals():
-                            portals.append(portal)
-                        
+                    sections["pools"].add(pool)
+                    sections["targets"].add(self._get_optional(ioctx, self.config_name, 'targets'))
+                    sections["portals"].add(self._get_optional(ioctx, self.config_name, 'portals'))
 
+                    gateways.find_portals()
                     attrs = ioctx.get_xattrs(self.config_name)
                     for key, value in attrs:
                         if key == "targets" or key == "portals":
                             continue
                         elif key[0] == "_":
-                            a.add(json.loads(value, 
-                                object_pairs_hook=OrderedDict))
+                            sections["authentications"].add(
+                                json.loads(value, object_pairs_hook=OrderedDict))
                         else:
-                            if filter:
-                                if (key in targets or key == self.hostname):
-                                    content = json.loads(value,
-                                        object_pairs_hook=OrderedDict)
-                                    p.append('gateways', content)
-                                    for entry in content['tpg']:
-                                        if 'portal' in entry:
-                                            portals.append(entry['portal'])
-                            else:
-                                p.append('gateways', json.loads(value, 
-                                    object_pairs_hook=OrderedDict))
-
-        if filter:
-            t.purge()
-            a.purge()
-            pt.purge(portals)
-
-        Common.config['auth'] = a.authentications
-        Common.config['targets'] = t.targets
-        Common.config['portals'] = pt.portals
-        Common.config['pools'] = p.pools
+                            gateways.add(key, value, self.hostname)
+        gateways.purge()
+        Common.assign(sections)
 
     def _config_missing(self, ioctx, config_name, pool):
         """
@@ -846,11 +940,11 @@ class Configs:
         """
         try:
             ioctx.stat(config_name) # Check for object
-        except rados.ObjectNotFound, e:
+        except rados.ObjectNotFound, error:
             # No configuration for pool, skipping
             logging.info("No configuration object {} in pool {}".format(self.config_name, pool))
-            return(True)
-        return(False)
+            return True
+        return False
 
     def _get_optional(self, ioctx, config_name, attr):
         """
@@ -861,49 +955,108 @@ class Configs:
             attr - key desired (e.g. 'targets' or 'portals')
         """
         try:
-            return(json.loads(ioctx.get_xattr(config_name, attr), object_pairs_hook=OrderedDict))
-        except rados.NoData, e:
+            return json.loads(ioctx.get_xattr(config_name, attr), object_pairs_hook=OrderedDict)
+        except rados.NoData, error:
             pass
 
     def display(self):
         """
-        JSON dump of structure to user.  Keys are sorted which makes the 
+        JSON dump of structure to user.  Keys are sorted which makes the
         format obnoxious when reviewing.  TODO: custom JSON output with
         keys sorted by significance.
         """
         print json.dumps(Common.config, indent=4)
 
-    def wipe(self):
+    def wipe(self, conn):
         """
         Remove configuration objects from all pools
         """
-        cluster = rados.Rados(conffile=self.ceph_conf)
-
-        cluster.connect()
-        pools = cluster.list_pools()
-        for pool in pools:
-            ioctx = cluster.open_ioctx(pool)
-            try:
-                ioctx.remove_object(self.config_name)
-                logging.debug("Removing {} from pool {}".format(self.config_name, pool))
-            except rados.ObjectNotFound, e:
-                logging.info("No object {} to remove from pool {}".format(self.config_name, pool))
-            ioctx.close
-        cluster.shutdown()
+        #conn = Cluster()
+        with conn as cluster:
+            pools = cluster.list_pools()
+            for pool in pools:
+                conn = Ioctx(cluster, pool)
+                with conn as ioctx:
+                    try:
+                        ioctx.remove_object(self.config_name)
+                        logging.debug("Removing {} from pool {}".
+                                      format(self.config_name, pool))
+                    except rados.ObjectNotFound, error:
+                        logging.info("No object {} to remove from pool {}".
+                                      format(self.config_name, pool))
 
     def clear(self):
         """
-        Reset any targetcli configuration.  
+        Reset any targetcli configuration.
 
         Note: the clearconfig option is missing from the current targetcli
         which would remove the additional dependencies
         """
-        cmds = [ [ "/usr/sbin/tcm_fabric", "--unloadall" ],
-                 [ "/usr/sbin/lio_node", "--unload" ],
-                 [ "/usr/sbin/tcm_node", "--unload" ] ]
+        cmds = [["/usr/sbin/tcm_fabric", "--unloadall"],
+                ["/usr/sbin/lio_node", "--unload"],
+                ["/usr/sbin/tcm_node", "--unload"]]
         for cmd in cmds:
             popen(cmd)
 
+class Gateways(object):
+    """
+    Adds the gateways to the pools section.  If host_only is true, then
+    only targets, authentications and portals referencing the host are
+    kept.
+    """
+
+    def __init__(self, sections):
+        """
+        Keeps a running track of portals, initializes host_only
+
+            sections = dict of configuration
+        """
+        self.portals = []
+        self.sections = sections
+        self.host_only = False
+
+    def hostonly(self):
+        """
+        Enable host_only
+        """
+        self.host_only = True
+
+    def find_portals(self):
+        """
+        Search for all portals listed in the targets section.  This is
+        a no-op for the global configuration.
+        """
+        if self.host_only:
+            self.targets = self.sections["targets"].list()
+            for portal in self.sections["targets"].portals():
+                self.portals.append(portal)
+
+    def add(self, key, value, hostname):
+        """
+        Add a gateway specifically for a host or for all hosts
+        """
+        if self.host_only:
+            if key in self.targets or key == hostname:
+                content = json.loads(value,
+                                     object_pairs_hook=OrderedDict)
+                self.sections["pools"].append('gateways', content)
+                for entry in content['tpg']:
+                    if 'portal' in entry:
+                        self.portals.append(entry['portal'])
+        else:
+            self.sections["pools"].append('gateways',
+                json.loads(value, object_pairs_hook=OrderedDict))
+
+
+    def purge(self):
+        """
+        Removes configuration not containing host.  No-op for global
+        configuration.
+        """
+        if self.host_only:
+            self.sections["targets"].purge()
+            self.sections["authentications"].purge()
+            self.sections["portals"].purge(self.portals)
 
 ##########################################################################
 # Ideal spot for separating into another file.  All classes and functions
@@ -919,7 +1072,7 @@ def entries():
                 for entry in gentry['tpg']:
                     yield (pentry, gentry, entry)
 
-class Images:
+class Images(object):
     """
     Manages mapping and unmapping RBD images
     """
@@ -931,21 +1084,21 @@ class Images:
         self.mounts = {}
         proc = Popen(["rbd", "showmapped"], stdout=PIPE, stderr=PIPE)
         for line in proc.stdout:
-                results = re.split(r'\s+', line)
-                if (results[0] == 'id'):
-                    continue
-                self.mounts[ ":".join([ results[1], results[2] ]) ] = results[4]  
+            results = re.split(r'\s+', line)
+            if results[0] == 'id':
+                continue
+            self.mounts[":".join([results[1], results[2]])] = results[4]
 
     def map(self):
         """
         Create the commands to map each rbd device
         """
         self.map_cmds = []
-        
+
         for pentry, gentry, entry in entries():
-           if ":".join([ pentry['pool'], entry['image'] ]) in self.mounts.keys():
-               continue
-           self.map_cmds.append([ "rbd", "-p", pentry['pool'], "map", entry['image'] ])
+            if ":".join([pentry['pool'], entry['image']]) in self.mounts.keys():
+                continue
+            self.map_cmds.append(["rbd", "-p", pentry['pool'], "map", entry['image']])
 
         for cmd in self.map_cmds:
             popen(cmd)
@@ -955,10 +1108,10 @@ class Images:
         Unmount all rbd images
         """
         for mount in self.mounts.keys():
-            popen([ "rbd", "unmap", self.mounts[mount]])
+            popen(["rbd", "unmap", self.mounts[mount]])
 
 
-class Backstores:
+class Backstores(object):
     """
     Creates the necessary backstores via targetcli for each RBD image.
     """
@@ -978,7 +1131,7 @@ class Backstores:
         #    self._load_modules()
         self._cmd()
         Runtime.config['backstore'] = self.selected
-            
+
 
     def _detect(self):
         """
@@ -986,7 +1139,7 @@ class Backstores:
         All images will be either iblock or rbd.  Last checked wins.
         """
         for pentry, gentry, entry in entries():
-            existing = glob.glob(TARGET + "/core/*/{}".format(entry['image']))
+            existing = Runtime.core("*/{}".format(entry['image']))
             if existing:
                 self.selected = re.split("[/_]", existing[0])[6]
 
@@ -999,25 +1152,26 @@ class Backstores:
         Generate the backstore commands, skip existing.
         """
         for pentry, gentry, entry in entries():
-           
-            cmd = [ "targetcli", "/backstores/{}".format(self.selected), 
-                    "create", "name={}".format(entry['image']), 
-                    "dev=/dev/rbd/{}/{}".format(pentry['pool'], 
-                    entry['image']) ]
-            backstore = glob.glob(TARGET + "/core/{}_*/{}".format(self.selected, entry['image']))
-            if not backstore: 
+
+            cmd = ["targetcli", "/backstores/{}".format(self.selected),
+                   "create", "name={}".format(entry['image']),
+                   "dev=/dev/rbd/{}/{}".format(pentry['pool'],
+                                               entry['image'])]
+            backstore = Runtime.core("{}_*/{}".format(self.selected,
+                                                      entry['image']))
+            if not backstore:
                 self.cmds.append(cmd)
 
 
     def _load_modules(self):
         """
-        Same kernel modules as targetcli + target_core_rbd 
+        Same kernel modules as targetcli + target_core_rbd
         """
-        modules = [ "vhost_scsi", "iscsi_target_mod", "tcm_loop", "tcm_fc",
-                    "ib_srpt", "tcm_qla2xxx", "target_core_rbd" ]
+        modules = ["vhost_scsi", "iscsi_target_mod", "tcm_loop", "tcm_fc",
+                   "ib_srpt", "tcm_qla2xxx", "target_core_rbd"]
         for module in modules:
             if not os.path.isdir("/sys/module/{}".format(module)):
-                popen([ "modprobe", module ])
+                popen(["modprobe", module])
 
     def create(self):
         """
@@ -1033,16 +1187,16 @@ class Backstores:
         """
 
         for pentry, gentry, entry in entries():
-            files = glob.glob(TARGET + "/core/rbd_*/{}/enable".format(entry['image']))
-            for file in files:
-                enabled = open(file).read().rstrip('\n')
-                if (enabled == "0"):
-                    with open(file, "w") as enable:
+            files = Runtime.core("rbd_*/{}/enable".format(entry['image']))
+            for filename in files:
+                enabled = open(filename).read().rstrip('\n')
+                if enabled == "0":
+                    with open(filename, "w") as enable:
                         enable.write("1")
-                        logging.debug("Enabling {}".format(file))
-                
+                        logging.debug("Enabling {}".format(filename))
 
-class Iscsi:
+
+class Iscsi(object):
     """
     Creates iscsi entries with provided static target iqns or dynamically
     generates one if none are provided.
@@ -1050,28 +1204,21 @@ class Iscsi:
 
     def __init__(self):
         """
-        Find all target entries in targets.  Append to cmds all that do not 
+        Find all target entries in targets.  Append to cmds all that do not
         exist.  If no targets are provided, set cmds to a single base command.
         """
         self.cmds = []
         self.iqns = []
-        for entry in Common.config['targets']:
-            # Keep the host entry at the front of the list
-            if 'host' in entry:
-                self.iqns.insert(0, entry['target'])
-            else:
-                self.iqns.append(entry['target'])
-            if 'hosts' in entry and Runtime.config['backstore'] == "iblock":
-                logging.warning("Multiple gateway targets not supported with iblock backend, use rbd backend\n") 
 
+        self._arrange()
         self._gen_wwn()
         self._assign_vendor()
 
-        base = [ "targetcli", "/iscsi", "create" ]
+        base = ["targetcli", "/{}".format(Runtime.fabric), "create"]
 
         if self.iqns:
             for iqn in self.iqns:
-                path = glob.glob(TARGET + "/iscsi/{}".format(iqn))
+                path = Runtime.path("{}".format(iqn))
                 if not path:
                     cmd = list(base)
                     cmd.append(iqn)
@@ -1079,40 +1226,58 @@ class Iscsi:
         else:
             cmd = base
             self.cmds.append(cmd)
-            logging.warning("No matching host found, generating dynamic target\n") 
+            logging.warning("No matching host found, generating dynamic target\n")
+
+    def _arrange(self):
+        """
+        Keep the host entry target at the front of the list
+        """
+        for entry in Common.config['targets']:
+            if 'host' in entry:
+                self.iqns.insert(0, entry['target'])
+            else:
+                self.iqns.append(entry['target'])
+            if 'hosts' in entry and Runtime.config['backstore'] == "iblock":
+                logging.warning("Multiple gateway targets not supported " +
+                                "with iblock backend, use rbd backend\n")
+
 
     def _gen_wwn(self):
         """
-        generate the same wwn for targets on multiple gateways 
+        generate the same wwn for targets on multiple gateways
         """
-        # has to be unique for target and image 
+        # has to be unique for target and image
         if 'pools' in Common.config:
             for pentry, gentry, entry in entries():
                 if 'target' in gentry:
-                    _uuid = uuid.uuid3(uuid.NAMESPACE_DNS, 
-                                str(gentry['target'] + entry['image']))
-                    logging.debug("For image {} on target {}\nuuid: {}".format(entry['image'], gentry['target'], _uuid))
-                    path = glob.glob(TARGET + "/core/{}_*/{}/wwn/vpd_unit_serial".format(Runtime.config['backstore'], entry['image']))
+                    _uuid = uuid.uuid3(uuid.NAMESPACE_DNS,
+                                       str(gentry['target'] + entry['image']))
+                    logging.debug("For image {} on target {}\nuuid: {}".
+                                  format(entry['image'],
+                                         gentry['target'],
+                                         _uuid))
+                    path = Runtime.core("{}_*/{}/wwn/vpd_unit_serial".format(Runtime.config['backstore'], entry['image']))
                     try:
                         vus = open(path[0], "w")
                         vus.write(str(_uuid) + "\n")
                         vus.close()
-                    except IOError, e:
+                    except IOError:
                         # Already in use
                         pass
 
     def _assign_vendor(self):
         """
-        Add branding 
+        Add branding
         """
         for pentry, gentry, entry in entries():
-            path = glob.glob(TARGET + "/core/{}_*/{}/wwn/vendor_id".format(Runtime.config['backstore'], entry['image']))
-            if (path and os.path.isfile("/etc/SuSE-release")):
+            path = Runtime.core("{}_*/{}/wwn/vendor_id".format(Runtime.config['backstore'],
+                                                               entry['image']))
+            if path and os.path.isfile("/etc/SuSE-release"):
                 try:
                     vendor = open(path[0], "w")
                     vendor.write("SUSE\n")
                     vendor.close()
-                except IOError, e:
+                except IOError:
                     # Already in use
                     pass
 
@@ -1126,19 +1291,19 @@ class Iscsi:
         if self.iqns:
             Common.config['iqns'] = self.iqns
         else:
-            path = glob.glob(TARGET + "/iscsi/iqn*")
-            Common.config['iqns'] = [ basename(path[0]) ]
+            path = Runtime.path("iqn*")
+            Common.config['iqns'] = [basename(path[0])]
         logging.debug("Common.config['iqns']: {}".format(Common.config['iqns']))
 
 
-class TPGs:
+class TPGs(object):
     """
     Creates any additional TPGs needed.
     """
 
-    def __init__(self):
+    def __init__(self, tpg_counter, portal_index):
         """
-        Track several states.  
+        Track several states.
 
             self.cmds - final list of commands to be executed
             self.remote - TPG for holding remote gateway portals per target
@@ -1149,11 +1314,11 @@ class TPGs:
         self.pools = Common.config['pools']
         Runtime.config['addresses'] = addresses()
 
-        self.tpg = {}
-        self.portals = {}
+        self.tpg_counter = tpg_counter
+        self.portal_index = portal_index
 
         self._add()
-        Runtime.config['portals'] = self.portals
+        Runtime.config['portals'] = self.portal_index.portals
 
     def _add(self):
         """
@@ -1162,75 +1327,73 @@ class TPGs:
         """
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
-            if (not target in self.tpg or not 'initiator' in entry):
-                self.tpg[target] = 1
-                logging.debug("Initializing target {}".format(target))
-            if not target in self.portals:
-                self.portals[target] = {}
-            if not entry['image'] in self.portals[target]:
-                self.portals[target][entry['image']] = {}
+            self.tpg_counter.add(target)
+            self.portal_index.add(target, entry['image'])
+
             if 'target' in gentry:
                 self._add_target(target, entry['image'])
             else:
                 self._add_host(entry, target)
 
-    def _add_target(self, target, image):
+    def _add_target(self, target):
         """
         Adds a TPG for each portal on this host.  Effectively multiplies the
         number of defined groups of TPGs by the number of portal groups.  Each
         gateway will create the same ordering so a specific image will be the
         same TPG and index on every gateway.
- 
+
             target - target iqn
         """
         for tentry in Common.config['targets']:
             if target == tentry['target']:
                 for hentry in tentry['hosts']:
-                    if not hentry['portal'] in self.portals[target][image]:
-                        self.portals[target][image][hentry['portal']] = self.tpg[target]
-                        self.tpg[target] += 1 
-                        self.cmds.append(self._cmd(target, 
-                                         self.portals[target][image][hentry['portal']]))
-                        logging.debug("Adding TPG {} for target {}".format(self.portals[target][image][hentry['portal']], target))
-                    
+                    if not hentry['portal'] in self.portal_index.list():
+                        self.portal_index.index(hentry['portal'])
+                        self._add_command(target)
+                        self.tpg_counter.next()
+
+    def _add_command(self, target):
+        """
+        Append command with current counter
+        """
+        self.portal_index.tpg(self.tpg_counter.value())
+        self.cmds.append(self._cmd(target, self.tpg_counter.value()))
+        logging.debug("Adding TPG {} for target {}".
+                      format(self.tpg_counter.value(), target))
+
+
     def _add_host(self, entry, target):
         """
         Adds a tpg for the specified entry
 
-            entry - a dict containing portal, initiator and image keys 
-            target - target iqn 
+            entry - a dict containing portal, initiator and image keys
+            target - target iqn
         """
         if 'portal' in entry:
             allocated_tpg = self._search_allocated_portals(entry['portal'], target, entry['image'])
+            self.portal_index.index(entry['portal'])
             if allocated_tpg:
-                self.portals[target][entry['image']][entry['portal']] = allocated_tpg
+                self.portal_index.tpg(allocated_tpg)
 
-            if not entry['portal'] in self.portals[target][entry['image']]:
+            if not entry['portal'] in self.portal_index.list():
                 self._check_portal(entry['portal'])
-                self.portals[target][entry['image']][entry['portal']] = self.tpg[target]
-                self.tpg[target] += 1 
-                self.cmds.append(self._cmd(target, 
-                                 self.portals[target][entry['image']][entry['portal']]))
-                logging.debug("Adding TPG {} for target {}".format(self.portals[target][entry['image']][entry['portal']], target))
+                self._add_command(target)
+                self.tpg_counter.next()
         else:
-            self.portals[target][entry['image']]['default'] = self.tpg[target]
-            self.tpg[target] += 1 
-            self.cmds.append(self._cmd(target, 
-                             self.portals[target][entry['image']]['default']))
-            logging.debug("Adding TPG {} for target {}".format(self.portals[target][entry['image']]['default'], target))
+            self.portal_index.index = 'default'
+            self._add_command(target)
+            self.tpg_counter.next()
 
     def _search_allocated_portals(self, name, target, image):
         """
+        Return an already allocated tpg if it exists
         """
         for image in self.portals[target].keys():
             for portal in self.portals[target][image].keys():
                 if name == portal:
-                    return(self.portals[target][image][portal])
-        return(False)
-                    
-        
+                    return self.portals[target][image][portal]
+        return False
 
-                    
     def _check_portal(self, name):
         """
         Check that the referenced portal is defined in portals
@@ -1247,44 +1410,45 @@ class TPGs:
         """
         Find non-local portals on each tpg and disable
         """
-        for target in self.portals.keys():
-            for image in self.portals[target].keys():
-                for name in self.portals[target][image].keys():
-                    for entry in Common.config['portals']:
-                        if name == entry['name']:
-                            for address in entry['addresses']:
-                                addr = re.split(" ", address)[0]
-                                if not addr in Runtime.config['addresses']:
-                                    self._disable_tpg(target, 
-                                        self.portals[target][image][name])
+        for target, image, portal, tpg in self.portal_index.entries():
+            for entry in Common.config['portals']:
+                if portal == entry['name']:
+                    for address in entry['addresses']:
+                        addr = re.split(" ", address)[0]
+                        if not addr in Runtime.config['addresses']:
+                            self._disable_tpg(target, tpg)
 
 
     def _disable_tpg(self, target, tpg):
         """
         Disable TPG and disable tpg_enabled_sendtargets.
         """
-        path = TARGET + "/iscsi/{}/tpgt_{}/attrib/tpg_enabled_sendtargets".format(target, tpg)
+        path = Runtime.path("{}/tpgt_{}/attrib/tpg_enabled_sendtargets".
+                            format(target, tpg))[0]
         if not os.path.isfile(path):
-            raise RuntimeError("tpg_enabled_sendtargets unsupported, upgrade kernel to 3.12.46-102-default or higher")
+            raise RuntimeError("tpg_enabled_sendtargets unsupported, " +
+                               "upgrade kernel to 3.12.46-102-default or higher")
         tes = open(path, "w")
         tes.write("0")
         tes.close()
-        logging.debug("Disabling tpg_enabled_sendtargets for tpg {} under target {}".format(tpg, target))
-        tpg_path = TARGET + "/iscsi/{}/tpgt_{}/enable".format(target, tpg)
+        logging.debug("Disabling tpg_enabled_sendtargets for tpg " +
+                      "{} under target {}".format(tpg, target))
+        tpg_path = Runtime.path("{}/tpgt_{}/enable".format(target, tpg))[0]
         enabled = open(tpg_path).read().rstrip('\n')
-        if (enabled == "1"):
-            popen([ "targetcli", "/iscsi/{}/tpg{}".format(target, tpg), "disable" ])
+        if enabled == "1":
+            popen(["targetcli", "/{}/{}/tpg{}".
+                   format(Runtime.fabric, target, tpg), "disable"])
 
 
     def _cmd(self, target, tpg):
         """
         Return targetcli command if configfs entry is not present
         """
-        path = glob.glob(TARGET + "/iscsi/{}/tpgt_{}".format(target, tpg))
+        path = Runtime.path("{}/tpgt_{}".format(target, tpg))
         if not path:
-            return([ "targetcli", "/iscsi/{}".format(target), 
-                         "create {}".format(tpg) ])
-        return([])
+            return ["targetcli", "/{}/{}".format(Runtime.fabric, target),
+                    "create {}".format(tpg)]
+        return []
 
     def create(self):
         """
@@ -1293,9 +1457,98 @@ class TPGs:
         for cmd in self.cmds:
             if cmd:
                 popen(cmd)
-        
 
-class Portals:
+class TPGCounter(object):
+    """
+    """
+
+    def __init__(self):
+        """
+        Track counter
+        """
+        self.tpg = {}
+        self.target = None
+
+    def add(self, target):
+        """
+        Initializing
+        """
+        #if not target in self.tpg or not 'initiator' in entry:
+        if not target in self.tpg:
+            self.tpg[target] = 1
+            self.target = target
+            logging.debug("Initializing target {}".format(target))
+
+    def value(self):
+        """
+        Return tpg value
+        """
+        return self.tpg[self.target]
+
+    def next(self):
+        """
+        Increment for next target
+        """
+        self.tpg[self.target] += 1
+
+class PortalIndex(object):
+    """
+    """
+
+    def __init__(self):
+        """
+        """
+        self.portals = {}
+
+        self.target = None
+        self.image = None
+        self.portal = None
+
+    def add(self, target, image):
+        """
+        """
+        if not target in self.portals:
+            self.portals[target] = {}
+            self.target = target
+        if not image in self.portals[target]:
+            self.portals[target][image] = {}
+            self.image = image
+
+    def list(self):
+        """
+        """
+        return self.portals[self.target][self.image]
+
+    def index(self, value):
+        """
+        """
+        self.portal = value
+
+    def tpg(self, value):
+        """
+        """
+        self.portals[self.target][self.image][self.portal] = value
+
+    def entries(self):
+        """
+        """
+        for target in self.portals.keys():
+            for image in self.portals[target].keys():
+                for portal in self.portals[target][image].keys():
+                    yield(target, image, portal, 
+                          self.portals[target][image][portal])
+
+    #def __setattr__(self, name, value):
+    #    if name == "portal":
+    #        #self.portal = value
+    #        object.__setattr__(self, name, value)
+    #    if name == "tpg":
+    #        self.portals[self.target][self.image][self.portal] = value
+    #    if name == "portals":
+    #        setattr(self, name, value)
+
+
+class Portals(object):
     """
     Manage the creation of portals, skipping existing.  If none are provided
     in the configuration, assign the base targetcli command which selects
@@ -1313,21 +1566,22 @@ class Portals:
             for target, image, portal, entry in self._entries():
                 if entry['name'] == portal:
                     for address in entry['addresses']:
-                        self._cmd(target, 
-                            Runtime.config['portals'][target][image][portal], 
-                            address)
-                        logging.debug("Adding address {} to tpg {} under target {}".format(address, Runtime.config['portals'][target][image][portal], target))
+                        #self._cmd(target, Runtime.config['portals'][target][image][portal],
+                        self._cmd(target,
+                                  Runtime.tpg(target, image, portal),
+                                  address)
+                        logging.debug("Adding address {} to tpg {} under target {}".format(address, Runtime.tpg(target, image, portal), target))
         else:
             self._cmd(iqn({}), "1", "")
-                        
+
 
     def _entries(self):
         """
         Generator
         """
-        for target in Runtime.config['portals'].keys():
-            for image in Runtime.config['portals'][target]:
-                for portal in Runtime.config['portals'][target][image]:
+        for target in Runtime.targets():
+            for image in Runtime.images(target):
+                for portal in Runtime.portals(target, image):
                     self._check(portal)
                     for entry in Common.config['portals']:
                         yield(target, image, portal, entry)
@@ -1340,16 +1594,16 @@ class Portals:
             name - name of portal
         """
         found = False
-        if (name == "default"):
+        if name == "default":
             found = True
         for entry in Common.config['portals']:
             if entry['name'] == name:
                 found = True
-        
+
         if not found:
             raise ValueError("portal {} missing from portals section".format(name))
-            
-         
+
+
 
 
     def _cmd(self, target, tpg, address):
@@ -1357,8 +1611,11 @@ class Portals:
         Compose targetcli commmand for creating portal if needed. Convert
         address from space to colon delimited, if needed.
         """
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}/portals".format(target, tpg), "create", address ] 
-        portal = glob.glob(TARGET + "/iscsi/{}/tpgt_{}/np/{}*".format(target, tpg, re.sub(r' ', ':', address)))
+        cmd = ["targetcli",
+               "/{}/{}/tpg{}/portals".format(Runtime.fabric, target, tpg),
+               "create", address]
+        portal = Runtime.path("{}/tpgt_{}/np/{}*".
+                              format(target, tpg, re.sub(r' ', ':', address)))
         if not portal:
             self.cmds.append(cmd)
 
@@ -1372,50 +1629,54 @@ class Portals:
         for cmd in self.cmds:
             popen(cmd)
 
-class Luns:
+class Luns(object):
     """
-    Manages the creation of luns.  Also, provides method for 
+    Manages the creation of luns.  Also, provides method for
     disabling auto add which is necessary for acls.
     """
 
     def __init__(self):
         """
-        Skips existing luns.  Builds commands for each image under the 
+        Skips existing luns.  Builds commands for each image under the
         correct target.
         """
         self.cmds = []
         self.exists = {}
-                
+
         self._find()
 
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
             if 'target' in gentry:
-                for image in Runtime.config['portals'][target].keys():
+                for image in Runtime.images(target):
                     if image == entry['image']:
-                        for portal in Runtime.config['portals'][target][image].keys():
-                            tpg = str(Runtime.config['portals'][target][image][portal])
-                   
-                            if not (target in self.exists and 
-                                    tpg in self.exists[target] and
-                                    entry['image'] in self.exists[target][tpg]):
-                                self._cmd(target, tpg, entry['image'])
-                                logging.debug("Adding lun for image {} to tpg {} under target {}".format(entry['image'], tpg, target))
+                        for portal in Runtime.portals(target, image):
+                            tpg = str(Runtime.tpg(target, image, portal))
+
+                            self._add_command(target, tpg, entry)
             else:
                 tpg = str(Runtime.tpg(target, entry))
-                if not (target in self.exists and 
-                        tpg in self.exists[target] and
-                        entry['image'] in self.exists[target][tpg]):
-                    self._cmd(target, tpg, entry['image'])
-                    logging.debug("Adding lun for image {} to tpg {} under target {}".format(entry['image'], tpg, target))
-                
+                self._add_command(target, tpg, entry)
+
+    def _add_command(self, target, tpg, entry):
+        """
+        Append to existing commands if necessary
+        """
+        if not (target in self.exists and
+                tpg in self.exists[target] and
+                entry['image'] in self.exists[target][tpg]):
+            self._cmd(target, tpg, entry['image'])
+            logging.debug("Adding lun for image {} to tpg {} under target {}".format(entry['image'], tpg, target))
+
+
     def _find(self):
         """
         Scan paths for existing luns and save lun name to list
         """
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
-            udev_paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/lun/lun_*/*/udev_path".format(target))
+            udev_paths = Runtime.path("{}/tpgt_*/lun/lun_*/*/udev_path".
+                                      format(target))
             if not target in self.exists:
                 self.exists[target] = {}
             for udev_path in udev_paths:
@@ -1424,16 +1685,20 @@ class Luns:
                 if not tpg in self.exists[target]:
                     self.exists[target][tpg] = []
                 self.exists[target][tpg].append(basename(contents))
-      
+
 
     def _cmd(self, target, tpg, image):
         """
         Compose targetcli commmand for creating lun if needed.
         """
-        if (Runtime.config['backstore'] == "rbd"):
-            cmd = [ "targetcli", "/iscsi/{}/tpg{}/luns".format(target, tpg), "create", "/backstores/rbd/{}".format(image) ] 
+        if Runtime.config['backstore'] == "rbd":
+            cmd = ["targetcli",
+                   "/{}/{}/tpg{}/luns".format(Runtime.fabric, target, tpg),
+                   "create", "/backstores/rbd/{}".format(image)]
         else:
-            cmd = [ "targetcli", "/iscsi/{}/tpg{}/luns".format(target, tpg), "create", "/backstores/iblock/{}".format(image) ] 
+            cmd = ["targetcli",
+                   "/{}/{}/tpg{}/luns".format(Runtime.fabric, target, tpg),
+                   "create", "/backstores/iblock/{}".format(image)]
         self.cmds.append(cmd)
 
     def create(self):
@@ -1448,49 +1713,63 @@ class Luns:
         """
         Allow device to initiator mapping by disabling auto mapping.
         """
-        proc = Popen(["targetcli", "get", "global", "auto_add_mapped_luns"], stdout=PIPE, stderr=PIPE)
+        proc = Popen(["targetcli", "get", "global", "auto_add_mapped_luns"],
+                     stdout=PIPE, stderr=PIPE)
         for line in proc.stdout:
             results = re.split(r'=', line)
-            if (results[1].rstrip() != 'false'):
-                cmd = [ "targetcli", "set", "global", "auto_add_mapped_luns=false" ]
+            if results[1].rstrip() != 'false':
+                cmd = ["targetcli", "set", "global", "auto_add_mapped_luns=false"]
                 popen(cmd)
 
-class Map:
+class Map(object):
+    """
+    """
 
     def __init__(self):
         """
-        Creates mapped luns under each initiator.  Skips existing. 
+        Creates mapped luns under each initiator.  Skips existing.
         """
         self.cmds = []
         self.luns = []
 
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
-            #if 'initiator' in entry:
             if 'target' in gentry:
-                if (find_auth(gentry['target']) == "acls" or
-                    find_auth(gentry['target']) == "tpg+identified"):
-                    if not 'initiator' in entry:
-                        raise RuntimeError("Entry for target {} missing initiator for specified authentication {}".format(target, find_auth(gentry['target'])))
-                    for image in Runtime.config['portals'][target].keys():
+                if self._check_auth(gentry['target']):
+                    self._check_initiator(entry, target, gentry['target'])
+                    for image in Runtime.images(target):
                         if image == entry['image']:
-                            for portal in Runtime.config['portals'][target][image].keys():
-                                tpg = Runtime.config['portals'][target][image][portal]
-                                lun = self._lun(target, tpg, entry['image'])
-                                self._check(target, tpg, entry['initiator'])
-                                self._cmd(target, tpg, entry['initiator'], lun)
-                                logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
+                            for portal in Runtime.portals(target, image):
+                                tpg = Runtime.tpg(target, image, portal)
+                                self._add_command(target, tpg, entry)
             else:
-                if (find_auth(gentry['host']) == "acls" or
-                    find_auth(gentry['host']) == "tpg+identified"):
-                    if not 'initiator' in entry:
-                        raise RuntimeError("Entry for host {} missing initiator for specified authentication {}".format(gentry['host'], find_auth(gentry['host'])))
+                if self._check_auth(gentry['host']):
+                    self._check_initiator(entry, target, gentry['host'])
                     tpg = Runtime.tpg(target, entry)
-                    lun = self._lun(target, tpg, entry['image'])
-                    self._check(target, tpg, entry['initiator'])
-                    self._cmd(target, tpg, entry['initiator'], lun)
-                    logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
-              
+                    self._add_command(target, tpg, entry)
+
+    def _check_auth(self, target_auth):
+        """
+        """
+        return(find_auth(target_auth) == "acls" or
+               find_auth(target_auth) == "tpg+identified")
+
+
+    def _check_initiator(self, entry, target, target_auth):
+        """
+        """
+        if not 'initiator' in entry:
+            raise RuntimeError("Entry for target {} missing initiator for specified authentication {}".format(target, find_auth(target_auth)))
+
+
+    def _add_command(self, target, tpg, entry):
+        """
+        """
+        lun = self._lun(target, tpg, entry['image'])
+        self._check(target, tpg, entry['initiator'])
+        self._cmd(target, tpg, entry['initiator'], lun)
+        logging.debug("Mapping lun {} for initiator {} to tpg {} under target {}".format(lun, entry['initiator'], tpg, target))
+
 
     def _lun(self, target, tpg, image):
         """
@@ -1498,11 +1777,11 @@ class Map:
 
             image - name of RBD image
         """
-        lun_path = glob.glob(TARGET + "/iscsi/{}/tpgt_{}/lun/lun_*/*".format(target, tpg))
-        for p in lun_path:
-            if (basename(os.path.realpath(p)) == image):
-                return(re.split("[/_]", p)[11])
-          
+        lun_path = Runtime.path("{}/tpgt_{}/lun/lun_*/*".format(target, tpg))
+        for path in lun_path:
+            if basename(os.path.realpath(path)) == image:
+                return re.split("[/_]", path)[11]
+
         raise ValueError("lun missing from tpg{} under target {}".format(tpg, target))
 
     def _check(self, target, tpg, initiator):
@@ -1513,9 +1792,11 @@ class Map:
             tpg - number of tpg, most likely "1"
             initiator - iqn of client
         """
-        path = glob.glob(TARGET + "/iscsi/{}/tpgt_{}/acls/{}".format(target, tpg, initiator))
+        path = Runtime.path("{}/tpgt_{}/acls/{}".format(target, tpg, initiator))
         if not path:
-            raise ValueError("ERROR: acl missing for initiator {} under tpg {} under target {}".format(initiator, tpg, target))
+            raise ValueError("ERROR: acl missing for initiator " +
+                             "{} under tpg {} under target {}".
+                             format(initiator, tpg, target))
 
     def _cmd(self, target, tpg, initiator, lun):
         """
@@ -1526,9 +1807,14 @@ class Map:
             initiator - iqn of client
             lun - number for block device of RBD image
         """
-        path = glob.glob(TARGET + "/iscsi/{}/tpgt_{}/acls/{}/lun_{}".format(target, tpg, initiator, lun))
+        path = Runtime.path("{}/tpgt_{}/acls/{}/lun_{}".
+                            format(target, tpg, initiator, lun))
         if not path:
-            self.cmds.append([ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(target, tpg, initiator), "create", lun, lun ])
+            self.cmds.append(["targetcli",
+                              "/{}/{}/tpg{}/acls/{}".format(Runtime.fabric,
+                                                            target, tpg,
+                                                            initiator),
+                              "create", lun, lun])
 
     def map(self):
         """
@@ -1538,16 +1824,16 @@ class Map:
             popen(cmd)
 
 
-class Acls:
+class Acls(object):
     """
-    Manage acls for each initiator.  Skip existing entries.  
+    Manage acls for each initiator.  Skip existing entries.
 
     """
 
     def __init__(self):
         """
-        Create acl under correct tpg per target.  Skip existing.  
-        Scan portal addresses for remote gateways.  Create acl under remote 
+        Create acl under correct tpg per target.  Skip existing.
+        Scan portal addresses for remote gateways.  Create acl under remote
         tpg, if necessary.
         """
         self.cmds = []
@@ -1558,32 +1844,45 @@ class Acls:
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
             if 'target' in gentry:
-                if (find_auth(gentry['target']) == "acls" or 
-                    find_auth(gentry['target']) == "tpg+identified"):
-                    if not 'initiator' in entry:
-                        raise RuntimeError("Entry for target {} missing initiator for specified authentication {}".format(target, find_auth(gentry['target'])))
-
-                    for image in Runtime.config['portals'][target].keys():
+                if self._check_auth(gentry['target']):
+                    self._check_initiator(entry, target, gentry['target'])
+                    for image in Runtime.images(target):
                         if image == entry['image']:
-                            for portal in Runtime.config['portals'][target][image].keys():
-                                tpg = str(Runtime.config['portals'][target][image][portal])
-                                if not (target in self.exists and
-                                        tpg in self.exists[target] and
-                                        entry['initiator'] in self.exists[target][tpg]):
-                                    self._cmd(target, tpg, entry['initiator'])
-                                    logging.debug("Adding initiator {} under tpg {} for target {}".format(entry['initiator'], tpg, target))
+                            for portal in Runtime.portals(target, image):
+                                tpg = str(Runtime.tpg(target, image, portal))
+                                self._add_command(target, tpg, entry)
             else:
-                if (find_auth(gentry['host']) == "acls" or
-                    find_auth(gentry['host']) == "tpg+identified"):
-                    if not 'initiator' in entry:
-                        raise RuntimeError("Entry for host {} missing initiator for specified authentication {}".format(gentry['host'], find_auth(gentry['host'])))
+                if self._check_auth(gentry['host']):
+                    self._check_initiator(entry, target, gentry['host'])
                     tpg = str(Runtime.tpg(target, entry))
-                    if not (target in self.exists and 
-                            tpg in self.exists[target] and
-                            entry['initiator'] in self.exists[target][tpg]):
-                        self._cmd(target, tpg, entry['initiator'])
-                        logging.debug("Adding initiator {} under tpg {} for target {}".format(entry['initiator'], tpg, target))
-                    
+                    self._add_command(target, tpg, entry)
+
+    def _check_auth(self, target_auth):
+        """
+        """
+        return(find_auth(target_auth) == "acls" or
+               find_auth(target_auth) == "tpg+identified")
+
+    def _check_initiator(self, entry, target, target_auth):
+        """
+        """
+        if not 'initiator' in entry:
+            raise RuntimeError("Entry for target " +
+                               "{} ".format(target) +
+                               "missing initiator for specified " +
+                               "authentication " +
+                               "{}".format(find_auth(target_auth)))
+
+    def _add_command(self, target, tpg, entry):
+        """
+        """
+        if not (target in self.exists and
+                tpg in self.exists[target] and
+                entry['initiator'] in self.exists[target][tpg]):
+            self._cmd(target, tpg, entry['initiator'])
+            logging.debug("Adding initiator {} under tpg {} for target {}".format(entry['initiator'], tpg, target))
+
+
     def _find(self):
         """
         Add existing initiators to list
@@ -1594,23 +1893,25 @@ class Acls:
                     target = iqn(gentry)
                     if not target in self.exists:
                         self.exists[target] = {}
-                    paths = glob.glob(TARGET + "/iscsi/{}/tpgt_*/acls/*".format(target))
+                    paths = Runtime.path("{}/tpgt_*/acls/*".format(target))
                     for path in paths:
                         self.initiators.append(basename(path))
                         tpg = re.split("[/_]", path)[8]
                         if not tpg in self.exists[target]:
                             self.exists[target][tpg] = []
                         self.exists[target][tpg].append(basename(path))
-                        
+
 
 
     def _cmd(self, target, tpg, initiator):
         """
         Compose targetcli command for creating an acl.  Append to list.
         """
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls".format(target, tpg), "create", initiator ] 
-        self.cmds.append(cmd) 
-               
+        cmd = ["targetcli",
+               "/{}/{}/tpg{}/acls".format(Runtime.fabric, target, tpg),
+               "create", initiator]
+        self.cmds.append(cmd)
+
     def create(self):
         """
         Execute unique, saved commands
@@ -1619,10 +1920,10 @@ class Acls:
             popen(cmd)
 
 
-class Auth:
+class Auth(object):
     """
     Manage the authentications for each target.  Each authentication mode
-    contains multiple steps.  Delegate creation of the necessary commands.  
+    contains multiple steps.  Delegate creation of the necessary commands.
     Execute commands.
     """
 
@@ -1637,21 +1938,21 @@ class Auth:
 
         if 'auth' in Common.config and Common.config['auth']:
             for auth in Common.config['auth']:
-                for target in Runtime.config['portals'].keys():
+                for target in Runtime.targets():
                     if target == iqn(auth):
                         self.target = target
-                        for image in Runtime.config['portals'][target].keys():
-                            for portal in Runtime.config['portals'][target][image].keys():
-                                self.tpg = str(Runtime.config['portals'][target][image][portal])
+                        for image in Runtime.images(target):
+                            for portal in Runtime.portals(target, image):
+                                self.tpg = str(Runtime.tpg(target, image, portal))
                                 self.auth = auth
                                 self.select_auth()
                                 self.cmds.extend(self.select_discovery())
         else:
-            for target in Runtime.config['portals'].keys():
+            for target in Runtime.targets():
                 self.target = target
-                for image in Runtime.config['portals'][target].keys():
-                    for portal in Runtime.config['portals'][target][image].keys():
-                        self.tpg = str(Runtime.config['portals'][target][image][portal])
+                for image in Runtime.images(target):
+                    for portal in Runtime.portals(target, image):
+                        self.tpg = str(Runtime.tpg(target, image, portal))
                         self.cmds.append(self.set_noauth())
             self.cmds.append(self.set_discovery_off())
 
@@ -1669,13 +1970,14 @@ class Auth:
         elif self.auth['authentication'] == "acls":
             self.cmds.extend(self.select_acls())
         else:
-            raise ValueError("InvalidAuthentication: authentication must be one of tpg, acls or none")
+            raise ValueError("InvalidAuthentication: authentication must " +
+                             "be one of tpg, tpg+identified, acls or none")
 
     def _generate_acls(self):
         """
         Create or append to the acls array the common tpg entry for each
         initiator.  This is technically the same as specifying acls with
-        the same userid/password/etc.  
+        the same userid/password/etc.
         """
         for initiator in self._find_tpg_identified_initiators():
             if not 'acls' in self.auth:
@@ -1699,11 +2001,11 @@ class Auth:
         """
         initiators = []
         for pentry, gentry, entry in entries():
-            for key in [ 'target', 'host']:
+            for key in ['target', 'host']:
                 if (key in self.auth and key in gentry and
-                   self.auth[key] == gentry[key]):
+                        self.auth[key] == gentry[key]):
                     initiators.append(entry['initiator'])
-        return(initiators)
+        return initiators
 
 
     def set_noauth(self):
@@ -1711,20 +2013,22 @@ class Auth:
         Disable authentication
         """
         logging.debug("Disable authentication")
-        path = TARGET + "/iscsi/{}/tpgt_{}/attrib".format(self.target, self.tpg)
+        path = Runtime.path("{}/tpgt_{}/attrib".format(self.target, self.tpg))[0]
         authentication = open(path + "/authentication").read().rstrip('\n')
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
-        
-        if ((authentication == "0") and
-           (demo_mode_write_protect == "0")):
-            return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=0", "demo_mode_write_protect=0", "generate_node_acls=1" ]
-        return(cmd)
+        if authentication == "0" and demo_mode_write_protect == "0":
+            return []
+
+        cmd = ["targetcli",
+               "/{}/{}/tpg{}".format(Runtime.fabric, self.target, self.tpg),
+               "set", "attribute", "authentication=0",
+               "demo_mode_write_protect=0", "generate_node_acls=1"]
+        return cmd
 
     def select_discovery(self):
         """
-        Discovery is optional, can be completely disabled, have only mutual 
+        Discovery is optional, can be completely disabled, have only mutual
         disabled or be completely enabled.  Delegate appropriately.
         """
         cmds = []
@@ -1743,7 +2047,7 @@ class Auth:
                     cmds.append(self.set_discovery_off())
             else:
                 cmds.append(self.set_discovery_off())
-            return(cmds)
+            return cmds
 
     def set_discovery(self):
         """
@@ -1751,23 +2055,22 @@ class Auth:
         current settings.
         """
         logging.debug("Set discovery authentication")
-        keys = [ 'userid', 'password']
+        keys = ['userid', 'password']
         check_keys(keys, self.d_auth['discovery'], "discovery under auth")
 
-        path = TARGET + "/iscsi/discovery_auth"
+        path = Runtime.path("discovery_auth")[0]
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
-        
-        if compare_settings(keys, current, self.d_auth['discovery']):
-            return([])
 
-        cmd = [ "targetcli", "/iscsi", "set", "discovery_auth", "enable=1",
-                 "userid={}".format(
-                     self.d_auth['discovery']['userid']), 
-                 "password={}".format(
-                     self.d_auth['discovery']['password']) ] 
-        return(cmd)
+        if compare_settings(keys, current, self.d_auth['discovery']):
+            return []
+
+        cmd = ["targetcli", "/{}".format(Runtime.fabric),
+               "set", "discovery_auth", "enable=1",
+               "userid={}".format(self.d_auth['discovery']['userid']),
+               "password={}".format(self.d_auth['discovery']['password'])]
+        return cmd
 
     def set_discovery_mutual(self):
         """
@@ -1775,47 +2078,45 @@ class Auth:
         Checks current settings.
         """
         logging.debug("Set discovery and mutual authentication")
-        keys = [ 'userid', 'password', 'userid_mutual', 'password_mutual']
+        keys = ['userid', 'password', 'userid_mutual', 'password_mutual']
         check_keys(keys, self.d_auth['discovery'], "discovery under auth")
 
-        path = TARGET + "/iscsi/discovery_auth"
+        path = Runtime.path("discovery_auth")[0]
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
         current['userid_mutual'] = open(path + "/userid_mutual").read().rstrip('\n')
         current['password_mutual'] = open(path + "/password_mutual").read().rstrip('\n')
-        
+
         if compare_settings(keys, current, self.d_auth['discovery']):
-            return([])
+            return []
 
 
-        cmd = [ "targetcli", "/iscsi", "set", "discovery_auth", "enable=1", 
-                 "userid={}".format(
-                     self.d_auth['discovery']['userid']), 
-                 "password={}".format(
-                     self.d_auth['discovery']['password']), 
-                 "mutual_userid={}".format(
-                     self.d_auth['discovery']['userid_mutual']), 
-                 "mutual_password={}".format(
-                     self.d_auth['discovery']['password_mutual']) ] 
-        return(cmd)
+        cmd = ["targetcli", "/{}".format(Runtime.fabric), "set",
+               "discovery_auth", "enable=1",
+               "userid={}".format(self.d_auth['discovery']['userid']),
+               "password={}".format(self.d_auth['discovery']['password']),
+               "mutual_userid={}".format(self.d_auth['discovery']['userid_mutual']),
+               "mutual_password={}".format(self.d_auth['discovery']['password_mutual'])]
+        return cmd
 
     def set_discovery_off(self):
         """
         Disable discovery
         """
         logging.debug("Disable discovery authentication")
-        path = TARGET + "/iscsi/discovery_auth"
+        path = Runtime.path("discovery_auth")[0]
         enforce = open(path + "/enforce_discovery_auth").read().rstrip('\n')
-        if (enforce == "0"):
-            return([])
+        if enforce == "0":
+            return []
 
-        cmd = [ "targetcli", "/iscsi", "set", "discovery_auth", "enable=0" ]
-        return(cmd)
+        cmd = ["targetcli", "/{}".format(Runtime.fabric), "set",
+               "discovery_auth", "enable=0"]
+        return cmd
 
     def select_tpg(self):
         """
-        TPG is optional, can have only mutual disabled or be completely 
+        TPG is optional, can have only mutual disabled or be completely
         enabled.  Delegate appropriately.  TPG allows a common userid and
         password for all initiators. Works for tpg and tpg+identified.
         """
@@ -1824,13 +2125,13 @@ class Auth:
             if self.auth['tpg']['mutual'] == "enable":
                 cmds.append(self.set_tpg_mutual())
                 cmds.append(self.set_tpg_mode())
-            else:    
+            else:
                 cmds.append(self.set_tpg())
                 cmds.append(self.set_tpg_mode())
         else:
             cmds.append(self.set_tpg())
             cmds.append(self.set_tpg_mode())
-        return(cmds)
+        return cmds
 
 
     def set_tpg(self):
@@ -1839,23 +2140,23 @@ class Auth:
         current setting.
         """
         logging.debug("Set tpg authentication")
-        keys = [ 'userid', 'password']
+        keys = ['userid', 'password']
         check_keys(keys, self.auth['tpg'], "tpg under auth")
-                
-        path = TARGET + "/iscsi/{}/tpgt_{}/auth".format(self.target, self.tpg)
+
+        path = Runtime.path("{}/tpgt_{}/auth".format(self.target, self.tpg))[0]
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
-        
-        if compare_settings(keys, current, self.auth['tpg']):
-            return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "auth", 
-                 "userid={}".format(
-                     self.auth['tpg']['userid']), 
-                 "password={}".format(
-                     self.auth['tpg']['password']) ] 
-        return(cmd)
+        if compare_settings(keys, current, self.auth['tpg']):
+            return []
+
+        cmd = ["targetcli",
+               "/{}/{}/tpg{}".format(Runtime.fabric, self.target, self.tpg),
+               "set", "auth",
+               "userid={}".format(self.auth['tpg']['userid']),
+               "password={}".format(self.auth['tpg']['password'])]
+        return cmd
 
     def set_tpg_mutual(self):
         """
@@ -1863,62 +2164,68 @@ class Auth:
         Checks current settings.
         """
         logging.debug("Set tpg and mutual authentication")
-        keys = [ 'userid', 'password', 'userid_mutual', 'password_mutual']
+        keys = ['userid', 'password', 'userid_mutual', 'password_mutual']
         check_keys(keys, self.auth['tpg'], "tpg under auth")
 
-        path = TARGET + "/iscsi/{}/tpgt_{}/auth".format(self.target, self.tpg)
+        path = Runtime.path("{}/tpgt_{}/auth".format(self.target, self.tpg))[0]
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
         current['userid_mutual'] = open(path + "/userid_mutual").read().rstrip('\n')
         current['password_mutual'] = open(path + "/password_mutual").read().rstrip('\n')
-        
-        if compare_settings(keys, current, self.auth['tpg']):
-            return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "auth", 
-                 "userid={}".format(
-                     self.auth['tpg']['userid']), 
-                 "password={}".format(
-                     self.auth['tpg']['password']), 
-                 "userid_mutual={}".format(
-                     self.auth['tpg']['userid_mutual']), 
-                 "password_mutual={}".format(
-                     self.auth['tpg']['password_mutual']) ] 
-        return(cmd)
+        if compare_settings(keys, current, self.auth['tpg']):
+            return []
+
+        cmd = ["targetcli",
+               "/{}/{}/tpg{}".format(Runtime.fabric, self.target, self.tpg),
+               "set", "auth",
+               "userid={}".format(self.auth['tpg']['userid']),
+               "password={}".format(self.auth['tpg']['password']),
+               "userid_mutual={}".format(self.auth['tpg']['userid_mutual']),
+               "password_mutual={}".format(self.auth['tpg']['password_mutual'])]
+        return cmd
 
     def set_tpg_mode(self):
         """
         Enable authentication, allow writing and enable acl generation. Checks
         current settings.
         """
-        path = TARGET + "/iscsi/{}/tpgt_{}/attrib".format(self.target, self.tpg)
+        path = Runtime.path("{}/tpgt_{}/attrib".format(self.target, self.tpg))[0]
         authentication = open(path + "/authentication").read().rstrip('\n')
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
         generate_node_acls = open(path + "/generate_node_acls").read().rstrip('\n')
-        
-        if (self.auth['authentication'] == "tpg"):
-            if ((authentication == "1") and
-               (demo_mode_write_protect == "0") and
-               (generate_node_acls  == "1")): 
-                return([])
 
-            return([ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=1" ]) 
+        if self.auth['authentication'] == "tpg":
+            if (authentication == "1" and
+                    demo_mode_write_protect == "0" and
+                    generate_node_acls == "1"):
+                return []
+
+            return(["targetcli",
+                    "/{}/{}/tpg{}".format(Runtime.fabric,
+                                          self.target, self.tpg),
+                    "set", "attribute", "authentication=1",
+                    "demo_mode_write_protect=0", "generate_node_acls=1"])
         else:
             # tpg+identified
-            if ((authentication == "1") and
-               (demo_mode_write_protect == "0") and
-               (generate_node_acls  == "0")): 
-                return([])
+            if (authentication == "1" and
+                    demo_mode_write_protect == "0" and
+                    generate_node_acls == "0"):
+                return []
 
-            return([ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=0" ]) 
+            return ["targetcli",
+                    "/{}/{}/tpg{}".format(Runtime.fabric, self.target,
+                                          self.tpg),
+                    "set", "attribute", "authentication=1",
+                    "demo_mode_write_protect=0", "generate_node_acls=0"]
 
     def select_acls(self):
         """
-        ACLs are optional, can have only mutual disabled or be completely 
-        enabled for each initiator.  Delegate appropriately.  ACLs allow a 
+        ACLs are optional, can have only mutual disabled or be completely
+        enabled for each initiator.  Delegate appropriately.  ACLs allow a
         unique userid and password for each initiator.
-        
+
         """
         cmds = []
         for acl in self.auth['acls']:
@@ -1931,40 +2238,47 @@ class Auth:
             else:
                 cmds.append(self.set_acls())
         cmds.append(self.set_acls_mode())
-        return(cmds)
- 
+        return cmds
+
     def set_acls(self):
         """
         Call targetcli to set a userid and password for a specific initiator.
         Checks current setting.
         """
         logging.debug("Set acl authentication")
-        keys = [ 'userid', 'password']
+        keys = ['userid', 'password']
         check_keys(keys, self.acl, "acl")
 
-        path = TARGET + "/iscsi/{}/tpgt_{}/acls/{}/auth".format(self.target, self.tpg, self.acl['initiator'])
+        path = Runtime.path("{}/tpgt_{}/acls/{}/auth".
+                            format(self.target,
+                                   self.tpg, self.acl['initiator']))[0]
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
-        
-        if compare_settings(keys, current, self.acl):
-            return([])
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(self.target, self.tpg, self.acl['initiator']), "set", "auth", 
-                 "userid={}".format(self.acl['userid']),
-                 "password={}".format(self.acl['password']), ] 
-        return(cmd)
+        if compare_settings(keys, current, self.acl):
+            return []
+
+        cmd = ["targetcli",
+               "/{}/{}/tpg{}/acls/{}".format(Runtime.fabric, self.target,
+                                             self.tpg, self.acl['initiator']),
+               "set", "auth",
+               "userid={}".format(self.acl['userid']),
+               "password={}".format(self.acl['password']),]
+        return cmd
 
     def set_acls_mutual(self):
         """
-        Call targetcli to set both a normal and mutual authentication for 
+        Call targetcli to set both a normal and mutual authentication for
         an initiator.  Checks current settings.
         """
         logging.debug("Set acl and mutual authentication")
-        keys = [ 'userid', 'password', 'userid_mutual', 'password_mutual']
+        keys = ['userid', 'password', 'userid_mutual', 'password_mutual']
         check_keys(keys, self.acl, "acl")
 
-        path = TARGET + "/iscsi/{}/tpgt_{}/acls/{}/auth".format(self.target, self.tpg, self.acl['initiator'])
+        path = Runtime.path("{}/tpgt_{}/acls/{}/auth".
+                            format(self.target, self.tpg,
+                                   self.acl['initiator']))
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
@@ -1972,29 +2286,35 @@ class Auth:
         current['password_mutual'] = open(path + "/password_mutual").read().rstrip('\n')
 
         if compare_settings(keys, current, self.acl):
-            return([])
+            return []
 
-        cmd = [ "targetcli", "/iscsi/{}/tpg{}/acls/{}".format(self.target, self.tpg, self.acl['initiator']), "set", "auth", 
-                 "userid={}".format(self.acl['userid']),
-                 "password={}".format(self.acl['password']), 
-                 "userid_mutual={}".format(self.acl['userid_mutual']),
-                 "password_mutual={}".format(self.acl['password_mutual']) ] 
-        return(cmd)
+        cmd = ["targetcli",
+               "/{}/{}/tpg{}/acls/{}".format(Runtime.fabric, self.target,
+                                             self.tpg, self.acl['initiator']),
+               "set", "auth",
+               "userid={}".format(self.acl['userid']),
+               "password={}".format(self.acl['password']),
+               "userid_mutual={}".format(self.acl['userid_mutual']),
+               "password_mutual={}".format(self.acl['password_mutual'])]
+        return cmd
 
     def set_acls_mode(self):
         """
         Enable authentication, disable acls generation.  Checks current settings.
         """
-        path = TARGET + "/iscsi/{}/tpgt_{}/attrib".format(self.target, self.tpg)
+        path = Runtime.path("{}/tpgt_{}/attrib".format(self.target, self.tpg))[0]
         authentication = open(path + "/authentication").read().rstrip('\n')
         demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
         generate_node_acls = open(path + "/generate_node_acls").read().rstrip('\n')
-        
-        if ((authentication == "1") and
-           (demo_mode_write_protect == "0") and
-           (generate_node_acls  == "0")): 
-            return([])
-        return([ "targetcli", "/iscsi/{}/tpg{}".format(self.target, self.tpg), "set", "attribute", "authentication=1", "demo_mode_write_protect=0", "generate_node_acls=0" ]) 
+
+        if (authentication == "1" and
+                demo_mode_write_protect == "0" and
+                generate_node_acls == "0"):
+            return []
+        return ["targetcli",
+                "/{}/{}/tpg{}".format(Runtime.fabric, self.target, self.tpg),
+                "set", "attribute", "authentication=1",
+                "demo_mode_write_protect=0", "generate_node_acls=0"]
 
     def create(self):
         """
@@ -2008,70 +2328,80 @@ class Auth:
 def main(args):
     """
     Apply stored configuration by default.  Otherwise, execute the alternate
-    path from the specified options. 
+    path from the specified options.
 
         args - expects parse_args() result from argparse
     """
     configs = Configs(args.config, args.ceph, args.host)
     logging.basicConfig(format='%(levelname)s: %(message)s')
 
-    if (args.verbose or args.wipe or args.host):
+    if args.verbose or args.wipe or args.host:
         logging.getLogger().level = logging.INFO
 
-    if (args.debug):
+    if args.debug:
         logging.getLogger().level = logging.DEBUG
 
-    if (args.wipe):
-        configs.wipe()
-    elif (args.clear):
+    if args.wipe:
+        configs.wipe(Cluster())
+    elif args.clear:
         configs.clear()
-        if (args.unmap):
+        if args.unmap:
             images = Images()
             images.unmap()
-    elif (args.unmap):
+    elif args.unmap:
         images = Images()
         images.unmap()
-    elif (args.file):
-        configs.wipe()
+    elif args.file:
+        conn = Cluster()
+        configs.wipe(conn)
         content = Content()
         content.read(args.file)
-        content.save()
-    elif (args.add):
+        content.save(conn)
+    elif args.add:
         content = Content()
         content.read(args.add)
-        content.save()
-    elif (args.output):
-        configs.retrieve()
-        configs.display()
-    elif (args.edit):
-        configs.retrieve()
-        content = Content()
-        content.edit(args.editor)
-        content.save()
-    elif (args.local):
-        configs.retrieve("host")
-        configs.display()
+        content.save(Cluster())
     else:
-        configs.retrieve("host")
-        images = Images()
-        images.map()
-        backstores = Backstores(args.backstore)
-        backstores.create()
-        iscsi = Iscsi()
-        iscsi.create()
-        tpgs = TPGs()
-        tpgs.create()
-        tpgs.disable_remote()
-        luns = Luns()
-        luns.create()
-        portals = Portals()
-        portals.create()
-        acls = Acls()
-        acls.create()
-        maps = Map()
-        maps.map()
-        auth = Auth()
-        auth.create()
+        sections = {"pools": Pools(),
+                    "portals": PortalSection(),
+                    "targets": Targets(),
+                    "authentications": Authentications()}
+        gateways = Gateways(sections)
+        if args.output:
+            configs.retrieve(Cluster(), sections, gateways)
+            configs.display()
+        elif args.edit:
+            conn = Cluster()
+            configs.retrieve(conn, sections, gateways)
+            content = Content()
+            content.edit(args.editor)
+            content.save(conn)
+        elif args.local:
+            gateways.hostonly()
+            configs.retrieve(Cluster(), sections, gateways)
+            configs.display()
+        else:
+            gateways.hostonly()
+            configs.retrieve(Cluster(), sections, gateways)
+            images = Images()
+            images.map()
+            backstores = Backstores(args.backstore)
+            backstores.create()
+            iscsi = Iscsi()
+            iscsi.create()
+            tpgs = TPGs(TPGCounter(), PortalIndex())
+            tpgs.create()
+            tpgs.disable_remote()
+            luns = Luns()
+            luns.create()
+            portals = Portals()
+            portals.create()
+            acls = Acls()
+            acls.create()
+            maps = Map()
+            maps.map()
+            auth = Auth()
+            auth.create()
 
 
 # Main
@@ -2079,54 +2409,55 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-e', '--edit', action='store_true', dest='edit', default=False,
-                    help='edit the rbd configuration for iSCSI')
+                        help='edit the rbd configuration for iSCSI')
     parser.add_argument('-E', '--editor', action='store', dest='editor',
-                    help='use editor to edit the rbd configuration for iSCSI', metavar='editor')
+                        help='use editor to edit the rbd configuration for iSCSI', metavar='editor')
     parser.add_argument('-c', '--config', action='store', dest='config',
-                    help='use name for object, defaults to "lrbd.conf"', metavar='name')
+                        help='use name for object, defaults to "lrbd.conf"', metavar='name')
     parser.add_argument('--ceph', action='store', dest='ceph',
-                    help='specify the ceph configuration file', metavar='ceph')
+                        help='specify the ceph configuration file', metavar='ceph')
     parser.add_argument('-H', '--host', action='store', dest='host',
-                    help='specify the hostname, defaults to "{}"'.format(socket.gethostname()), metavar='host')
-    parser.add_argument('-o', '--output', action='store_true', dest='output', 
-                    help='display the configuration')
-    parser.add_argument('-l', '--local', action='store_true', dest='local', 
-                    help='display the host configuration')
-    parser.add_argument('-f', '--file', action='store', dest='file', 
-                    help='import the configuration from file', metavar='file')
-    parser.add_argument('-a', '--add', action='store', dest='add', 
-                    help='add the configuration from file', metavar='file')
-    parser.add_argument('-u', '--unmap', action='store_true', dest='unmap', 
-                    help='unmap the rbd images')
-    parser.add_argument('-v', '--verbose', action='store_true', dest='verbose', 
-                    help='print INFO messages')
-    parser.add_argument('-d', '--debug', action='store_true', dest='debug', 
-                    help='print DEBUG messages')
-    parser.add_argument('-I', '--iblock', action='store_const', 
-                    dest='backstore', const='iblock',
-                    help='set the backstore to iblock, defaults to rbd')
-    parser.add_argument('-R', '--rbd', action='store_const', dest='backstore', 
-                    const='rbd',
-                    help='set the backstore to rbd')
-    parser.add_argument('-W', '--wipe', action='store_true', dest='wipe', 
-                    help='wipe the configuration objects from all pools')
-    parser.add_argument('-C', '--clear', action='store_true', dest='clear', 
-                    help='clear the targetcli configuration')
-    
+                        help='specify the hostname, defaults to "{}"'.
+                        format(socket.gethostname()), metavar='host')
+    parser.add_argument('-o', '--output', action='store_true', dest='output',
+                        help='display the configuration')
+    parser.add_argument('-l', '--local', action='store_true', dest='local',
+                        help='display the host configuration')
+    parser.add_argument('-f', '--file', action='store', dest='file',
+                        help='import the configuration from file', metavar='file')
+    parser.add_argument('-a', '--add', action='store', dest='add',
+                        help='add the configuration from file', metavar='file')
+    parser.add_argument('-u', '--unmap', action='store_true', dest='unmap',
+                        help='unmap the rbd images')
+    parser.add_argument('-v', '--verbose', action='store_true', dest='verbose',
+                        help='print INFO messages')
+    parser.add_argument('-d', '--debug', action='store_true', dest='debug',
+                        help='print DEBUG messages')
+    parser.add_argument('-I', '--iblock', action='store_const',
+                        dest='backstore', const='iblock',
+                        help='set the backstore to iblock, defaults to rbd')
+    parser.add_argument('-R', '--rbd', action='store_const', dest='backstore',
+                        const='rbd',
+                        help='set the backstore to rbd')
+    parser.add_argument('-W', '--wipe', action='store_true', dest='wipe',
+                        help='wipe the configuration objects from all pools')
+    parser.add_argument('-C', '--clear', action='store_true', dest='clear',
+                        help='clear the targetcli configuration')
+
     args = parser.parse_args()
-    
-    if (args.editor != None):
+
+    if args.editor != None:
         args.edit = True
-    
+
     if args.debug:
         main(args)
     else:
         try:
             main(args)
-        except SystemExit as e:
-            print e
+        except SystemExit as error:
+            print error
             exit()
-        except Exception as e:
-            logging.error(e)
+        except Exception as error:
+            logging.error(error)
             exit(1)
 
