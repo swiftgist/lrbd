@@ -791,6 +791,11 @@ class Configs:
 
             portals = []
             for pool in cluster.list_pools():
+                pool_id = cluster.pool_lookup(pool)
+                tier_id = cluster.get_pool_base_tier(pool_id)
+                if (pool_id != tier_id):
+                    logging.info("Skipping tier cache {}".format(pool))
+                    continue
                 conn = Ioctx(cluster, pool)
                 with conn as ioctx:
 

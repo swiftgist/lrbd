@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 1.0.2
+Version: 1.0.3
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
@@ -30,7 +30,7 @@ Requires: python-netifaces
 Requires: python-rados
 Requires: python-rbd
 Requires: ceph-common
-Requires: targetcli >= 2.1-104105
+Requires: targetcli-rbd
 Summary: Configures iSCSI access to Ceph rbd images
 
 %description
