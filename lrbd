@@ -132,7 +132,7 @@ def uniq(cmds):
         dictionary[" ".join(cmd)] = ''
     for k in dictionary.keys():
         unique.append(k.split())
-    return unique
+    return sorted(unique)
 
 def find_auth(key):
     """
