@@ -177,15 +177,23 @@ class Runtime(object):
     fabric = "iscsi"
 
     @staticmethod
-    def tpg(target, entry):
+    def tpg(*args):
         """
-        Returns target portal group for specified target and entry if it
-        exists, otherwise defaults to 1
+        Returns target portal group for specified target and entry if portal 
+        exists, otherwise defaults to 1. Also returns the target portal group
+        for specified target, image and portal.
         """
-        if 'portal' in entry:
-            return Runtime.config['portals'][target][entry['image']][entry['portal']]
+        target = args[0]
+        if len(args) == 2:
+            entry = args[1] 
+            if 'portal' in entry:
+                return Runtime.config['portals'][target][entry['image']][entry['portal']]
+            else:
+                return 1
         else:
-            return 1
+            image = args[1]
+            portal = args[2] 
+            return Runtime.config['portals'][target][image][portal]
 
     @staticmethod
     def core(pathname):
@@ -223,12 +231,12 @@ class Runtime(object):
         """
         return Runtime.config['portals'][target][image].keys()
 
-    @staticmethod
-    def tpg(target, image, portal):
-        """
-        Returns target portal group
-        """
-        return Runtime.config['portals'][target][image][portal]
+#    @staticmethod
+#    def tpg(target, image, portal):
+#        """
+#        Returns target portal group
+#        """
+#        return Runtime.config['portals'][target][image][portal]
 
 
 class InitialContents(object):
@@ -1336,7 +1344,8 @@ class TPGs(object):
             self.portal_index.add(target, entry['image'])
 
             if 'target' in gentry:
-                self._add_target(target, entry['image'])
+                #self._add_target(target, entry['image'])
+                self._add_target(target)
             else:
                 self._add_host(entry, target)
 
@@ -1375,7 +1384,7 @@ class TPGs(object):
             target - target iqn
         """
         if 'portal' in entry:
-            allocated_tpg = self._search_allocated_portals(entry['portal'], target, entry['image'])
+            allocated_tpg = self.portal_index.find(entry['portal'])
             self.portal_index.index(entry['portal'])
             if allocated_tpg:
                 self.portal_index.tpg(allocated_tpg)
@@ -1389,15 +1398,15 @@ class TPGs(object):
             self._add_command(target)
             self.tpg_counter.next()
 
-    def _search_allocated_portals(self, name, target, image):
-        """
-        Return an already allocated tpg if it exists
-        """
-        for image in self.portals[target].keys():
-            for portal in self.portals[target][image].keys():
-                if name == portal:
-                    return self.portals[target][image][portal]
-        return False
+    #def _search_allocated_portals(self, name, target, image):
+    #    """
+    #    Return an already allocated tpg if it exists
+    #    """
+    #    for image in self.portals[target].keys():
+    #        for portal in self.portals[target][image].keys():
+    #            if name == portal:
+    #                return self.portals[target][image][portal]
+    #    return False
 
     def _check_portal(self, name):
         """
@@ -1533,6 +1542,14 @@ class PortalIndex(object):
         """
         """
         self.portals[self.target][self.image][self.portal] = value
+
+    def find(self, name):
+        """
+        """
+        for target, image, portal, tpg in self.entries():
+            if (name == portal):
+                return tpg 
+        return False
 
     def entries(self):
         """
@@ -1750,7 +1767,7 @@ class Map(object):
             else:
                 if self._check_auth(gentry['host']):
                     self._check_initiator(entry, target, gentry['host'])
-                    tpg = Runtime.tpg(target, entry)
+                    tpg = str(Runtime.tpg(target, entry))
                     self._add_command(target, tpg, entry)
 
     def _check_auth(self, target_auth):
@@ -2283,7 +2300,7 @@ class Auth(object):
 
         path = Runtime.path("{}/tpgt_{}/acls/{}/auth".
                             format(self.target, self.tpg,
-                                   self.acl['initiator']))
+                                   self.acl['initiator']))[0]
         current = {}
         current['userid'] = open(path + "/userid").read().rstrip('\n')
         current['password'] = open(path + "/password").read().rstrip('\n')
