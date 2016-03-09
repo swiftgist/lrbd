@@ -108,6 +108,7 @@ install -m 644 samples/tpg+identified.json %{_samples}
 %service_del_preun lrbd.service 
 
 %postun
+export DISABLE_RESTART_ON_UPDATE=yes
 %service_del_postun lrbd.service 
 
 %clean
