@@ -11,7 +11,9 @@ For the impatient, follow the instructions for the simplest configuration of one
 
 ### From gateway
 1. Install lrbd  
-`# zypper in lrbd`
+   * On SUSE: `# zypper in lrbd`
+   * On Fedora: `# dnf install lrbd`
+   * On RHEL 7: `# yum install lrbd`
 2. Create a pool  
 `# ceph osd pool create swimming 256 256`
 * Create an RBD image  
