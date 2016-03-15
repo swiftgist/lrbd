@@ -1,0 +1,12 @@
+
+Four new requested features have been added, but are only lightly tested.  End to end integration testing has not been done.  I am adding examples for feedback, since working examples are easier to discuss.  These sample configuration filenames end in NEW.
+
+1) The generation of the WWN for the vpd_unit_serial number uses the python call uuid.uuid3.  The original passed argument is the concatenation of target and image name.  The new scheme includes the pool name.  (Currently, the same image name in two pools cannot be shared, so this change has no functional benefit at this time.)
+
+If your site has been using lrbd 1.0.4 or earlier, then adding the "version" attribute will continue to use the original argument.  See plain+version.json.NEW.
+
+2) If the automatic generation of the WWN is detrimental to your site, you may now hardcode a value.  For instance, if you wish to rename a target or image and retain the same uuid, set this value.  See plain+uuid.json.NEW.  (To quickly see the current values, run 'lrbd -d 2>&1 | grep uuid:')
+
+3) The dynamic assignment of sites with many LUNs removed and added regularly may require rescans and remapping.  The value of the LUNs may now be hardcoded.  Unassigned LUNs will still be allocated dynamically.  See 2gateways+2images+assigned_lun+no_authentication.json.NEW.
+
+4) Sharing the same image from the same pool to two different targets on the same gateway has not been supported.  This is a first attempt.  Consider this extremely *experimental*.  See 2gateways+2images+2targets+no_authentication.json.NEW.  The primary purpose is to have two different authentication strategies for the same image.

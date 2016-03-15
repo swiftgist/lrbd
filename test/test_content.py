@@ -1,16 +1,23 @@
 
-from lrbd import Content
+from lrbd import Content, InitialContents, Common
 from nose.tools import  *
 import unittest, mock
 import re, tempfile
+
+class InitialContentsTestCase(unittest.TestCase):
+
+    def setUp(self):
+        Common.config = { "auth": [], "targets": [], "pools": [] }
+        self.initialcontents = InitialContents()
+
+    def test_instructions(self):
+        assert re.match(r'#.*\n', self.initialcontents._instructions())
+
 
 class ContentTestCase(unittest.TestCase):
 
     def setUp(self):
         self.content = Content()
-
-    def test_instructions(self):
-        assert re.match(r'#.*\n', self.content.instructions())
 
     def test_read(self):
         data = '''{ "pools": [ { "pool": "rbd", 
