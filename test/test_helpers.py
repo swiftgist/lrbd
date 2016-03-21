@@ -1,6 +1,7 @@
-from lrbd import strip_comments, lstrip_spaces, check_keys, compare_settings, iqn, uniq, Common
+from lrbd import strip_comments, lstrip_spaces, check_keys, compare_settings, iqn, uniq, Common, retry
 from nose.tools import  *
 import unittest
+import mock
 
 class HelpersTestCase(unittest.TestCase):
 
@@ -9,6 +10,19 @@ class HelpersTestCase(unittest.TestCase):
 
     def tearDown(self):
         Common.config = {}
+
+    @mock.patch('lrbd.popen')
+    def test_retry(self, mock_subproc_popen):
+        retry([ "echo", "hello"])
+        assert mock_subproc_popen.called
+
+    @raises(RuntimeError)
+    def test_retry_failure(self):
+        retry([ "/bin/false" ])
+
+    @raises(RuntimeError)
+    def test_retry_failure_custom(self):
+        retry([ "/bin/false" ], retry_errors = [ 1 ], sleep = 0.1, retries = 2)
 
     def test_strip_comments(self):
         assert strip_comments("# some comment\n") == ""

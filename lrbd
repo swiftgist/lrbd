@@ -31,12 +31,13 @@ import netifaces
 from collections import OrderedDict
 import logging
 import pprint
+import time
 
 
 def popen(cmd):
     """
-    Execute a command, print both stdout and stderr, and exit unless
-    successful.
+    Execute a command, print both stdout and stderr, and raise exception 
+    unless successful.
 
         cmd - an array of strings of the command
     """
@@ -47,10 +48,40 @@ def popen(cmd):
     for line in proc.stderr:
         print line.rstrip('\n')
     proc.wait()
-    if proc.returncode != 0:
-        exit(proc.returncode)
-    if logging.getLogger().level <= logging.INFO:
+    if (proc.returncode != 0):
+        raise RuntimeError("command failed", proc.returncode)
+    if (logging.getLogger().level <= logging.INFO):
         print ""
+
+def retry(cmd, **kwargs):
+    """
+    Retry to execute commands for some errors.  Specifically, error codes
+    such as "95: Operation not supported" may be temporary conditions and
+    should be retried.  Errors such as "2: No such file or directory" is 
+    likely a typo and need only try once.
+
+        cmd - an array of strings of the command
+        retries - number of attempts
+        sleep - base seconds to wait
+        retry_errors - list of error codes
+    """
+    retries = int(kwargs.pop('retries', 3))
+    sleep = int(kwargs.pop('sleep', 4))
+    retry_errors = kwargs.pop('retry_errors', [])
+
+    for attempt in range(1, retries + 1):
+        try:
+            popen(cmd)
+        except RuntimeError as e:
+            if ( e[1] in retry_errors and attempt < retries):
+                wait_time = sleep * attempt 
+                print "Waiting {} seconds to try again".format(wait_time)
+                time.sleep(wait_time)
+                continue
+            else:
+                raise 
+        # Success
+        break
 
 def strip_comments(text):
     """
@@ -1122,18 +1153,29 @@ class Images(object):
 
     def map(self):
         """
-        Create the commands to map each rbd device
+        Create the commands to map each rbd device. Allow custom fields for
+        retries.
         """
-        self.map_cmds = []
-
+        self.map_cmds = {}
+        
         for pentry, gentry, entry in entries():
-            if ":".join([pentry['pool'], entry['image']]) in self.mounts.keys():
-                continue
-            self.map_cmds.append(["rbd", "-p", pentry['pool'], "map", entry['image']])
+           if ":".join([ pentry['pool'], entry['image'] ]) in self.mounts.keys():
+               continue
+           key = pentry['pool'] + ":" + entry['image']
+           if not key in self.map_cmds:
+               self.map_cmds[key] = {}
+           self.map_cmds[key]['cmd'] = [ "rbd", "-p", pentry['pool'], "map", entry['image'] ]
+           # Default list: 95, Operation not supported
+           self.map_cmds[key]['custom'] = { 'retry_errors' : [ 95 ] }
+           for attr in [ 'retries', 'sleep', 'retry_errors' ]:
+               if attr in entry:
+                   self.map_cmds[key]['custom'][attr] = entry[attr]
 
-        for cmd in uniq(self.map_cmds):
-        #for cmd in self.map_cmds:
-            popen(cmd)
+        for key in self.map_cmds.keys():
+            cmd = self.map_cmds[key]['cmd']
+            custom = self.map_cmds[key]['custom']
+            retry(cmd, **custom)
+    
 
     def unmap(self):
         """
@@ -2735,7 +2777,7 @@ if __name__ == "__main__":
         except SystemExit as error:
             print error
             exit()
-        except Exception as error:
-            logging.error(error)
+        except Exception as e:
+            logging.error(e[0])
             exit(1)
 

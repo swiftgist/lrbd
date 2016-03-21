@@ -101,6 +101,7 @@ install -m 644 samples/plain+wwn_generate.json %{_samples}
 install -m 644 samples/nonstandard_port+no_authentication.json %{_samples}
 install -m 644 samples/plain+attributes.json %{_samples}
 install -m 644 samples/plain+rbd_name.json %{_samples}
+install -m 644 samples/plain+retries.json %{_samples}
 install -m 644 samples/README.NEW %{_samples}
 
 
