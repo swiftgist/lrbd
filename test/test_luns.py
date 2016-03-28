@@ -75,7 +75,8 @@ class LunsTestCase(unittest.TestCase):
         logging.disable(logging.DEBUG)
         _la = mock_LunAssignment()
         self.l = mock_Luns(_la)
-        assert self.l.unassigned == [ ['targetcli', '/iscsi/iqn.xyz/tpg1/luns', 'create', '/backstores/rbd/archive'] ]
+        print self.l.unassigned
+        assert self.l.unassigned == [ ['targetcli', '/iscsi/iqn.xyz/tpg1/luns', 'create', '/backstores/rbd/rbd-archive'] ]
 
 
 

@@ -232,6 +232,14 @@ class Runtime(object):
         """
         return Runtime.config['portals'][target][image].keys()
 
+    @staticmethod
+    def backstore(pool, entry):
+        if 'rbd_name' in entry and entry['rbd_name'] == "simple":
+            name = entry['image']
+        else:
+            name = "-".join([ pool, entry['image'] ])
+        return(name)
+
 
 class InitialContents(object):
     """
@@ -1161,15 +1169,14 @@ class Backstores(object):
         """
         for pentry, gentry, entry in entries():
 
+            name = Runtime.backstore(pentry['pool'], entry)
             cmd = ["targetcli", "/backstores/{}".format(self.selected),
-                   "create", "name={}".format(entry['image']),
+                   "create", "name={}".format(name),
                    "dev=/dev/rbd/{}/{}".format(pentry['pool'],
                                                entry['image'])]
-            backstore = Runtime.core("{}_*/{}".format(self.selected,
-                                                      entry['image']))
+            backstore = Runtime.core("{}_*/{}".format(self.selected, name))
             if not backstore:
                 self.cmds.append(cmd)
-
 
     def _load_modules(self):
         """
@@ -1326,7 +1333,7 @@ class WWN(object):
                         _uuid = uuid.uuid3(uuid.NAMESPACE_DNS,
                                    str(pentry['pool'] + target +
                                    entry['image']))
-                self._save(entry, target, _uuid)
+                self._save(pentry, entry, target, _uuid)
 
     def _check_uuid(self, uuid):
         """
@@ -1335,13 +1342,14 @@ class WWN(object):
         return re.match(r'[\da-fA-F]{8}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{4}-[\da-fA-F]{12}$', uuid)
 
 
-    def _save(self, entry, target, uuid):
+    def _save(self, pentry, entry, target, uuid):
         """
         Write the uuid to the correct vpd_unit_serial file
         """
         logging.debug("For image {} on target {}\nuuid: {}".
                       format(entry['image'], target, uuid))
-        path = Runtime.core("{}_*/{}/wwn/vpd_unit_serial".format(Runtime.config['backstore'], entry['image']))
+        name = Runtime.backstore(pentry['pool'], entry)
+        path = Runtime.core("{}_*/{}/wwn/vpd_unit_serial".format(Runtime.config['backstore'], name))
         try:
             vus = open(path[0], "w")
             vus.write(str(uuid) + "\n")
@@ -1744,12 +1752,14 @@ class Luns(object):
         self.assigned = []
         self.unassigned = []
         self.exists = {}
+        self.name = None
         self.lun_assignment = lun_assignment
 
         self._find()
 
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
+            self.name = Runtime.backstore(pentry['pool'], entry)
             if 'target' in gentry:
                 for image in Runtime.images(target):
                     if image == entry['image']:
@@ -1797,11 +1807,11 @@ class Luns(object):
         if Runtime.config['backstore'] == "rbd":
             cmd = ["targetcli",
                    "/{}/{}/tpg{}/luns".format(Runtime.fabric, target, tpg),
-                   "create", "/backstores/rbd/{}".format(image)]
+                   "create", "/backstores/rbd/{}".format(self.name)]
         else:
             cmd = ["targetcli",
                    "/{}/{}/tpg{}/luns".format(Runtime.fabric, target, tpg),
-                   "create", "/backstores/iblock/{}".format(image)]
+                   "create", "/backstores/iblock/{}".format(self.name)]
 
         _lun = self.lun_assignment.assigned(target, image)
         if _lun:
