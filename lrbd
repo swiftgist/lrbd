@@ -1228,7 +1228,6 @@ class Iscsi(object):
         self._arrange()
         wwn = WWN()
         wwn.generate(self.iqns)
-        #self._gen_wwn()
         self._assign_vendor()
 
         base = ["targetcli", "/{}".format(Runtime.fabric), "create"]
@@ -1295,16 +1294,16 @@ class WWN(object):
     """
     def __init__(self):
         """
-        Initialize dicts _uuids and _versions.  Search configuration for
+        Initialize dicts _uuids and _generation.  Search configuration for
         optional settings.
         """
         self._uuids = {}
-        self._versions = {}
+        self._generation = {}
         for entry in Common.config['targets']:
             if 'target' in entry:
                 target = entry['target']
-                if 'version' in entry:
-                    self._versions[target] = entry['version']
+                if 'wwn_generate' in entry:
+                    self._generation[target] = entry['wwn_generate']
 
     def generate(self, iqns):
         """
@@ -1318,15 +1317,19 @@ class WWN(object):
                 if 'target' in gentry:
                     target = gentry['target']
                 else:
-                    target = iqns[0]
+                    if iqns:
+                        target = iqns[0]
+                    else:
+                        # None specified - rely on automatic generation
+                        return
                 if 'uuid' in entry:
                     _uuid = entry['uuid']
                     if not self._check_uuid(_uuid):
                         logging.warning("{} does not appear to be a UUID\nEXAMPLE: 12345678-abcd-9012-efab-345678901234".format(_uuid))
                     
                 else:
-                    if (target in self._versions and
-                        self._versions[target] == "1"):
+                    if (target in self._generation and
+                        self._generation[target] == "original"):
                         _uuid = uuid.uuid3(uuid.NAMESPACE_DNS,
                                    str(target + entry['image']))
                     else:

@@ -3,7 +3,7 @@
       {
         "host": "igw1",
         "target": "iqn.2003-01.org.linux-iscsi.generic.x86:sn.abcdefghijk",
-        "version": "1"
+        "wwn_generate": "original"
       }
     ],
     "auth": [
