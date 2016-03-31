@@ -1211,6 +1211,61 @@ class Backstores(object):
                         logging.debug("Enabling {}".format(filename))
 
 
+class BackstoreAttributes(object):
+    """
+    Allows the assignment of backstore attributes from each entry.
+    """
+
+    def __init__(self):
+        """
+        Define dict.  Set default values (e.g. "block_size": "1024") that
+        are different than kernel default values
+        """
+        self.attributes = {}
+
+    def assign(self):
+        """
+        Search entries for backstore_ prefixed attributes and add/overwrite
+        dict values.  Save each.
+        """
+        once = True
+        for pentry, gentry, entry in entries():
+            name = Runtime.backstore(pentry['pool'], entry)
+            _attributes = self.attributes.copy()
+            for attr in entry:
+                if re.match(r'backstore_', attr):
+                    backstore_attr = re.sub(r'backstore_', '', attr)
+                    _attributes[backstore_attr] = entry[attr]
+                    if once:
+                        logging.warning("Be aware that default values were used during testing and understand the impact of changing any backstore attributes.\n")
+                        once = False
+                
+            self._save(name, _attributes)
+
+    def _save(self, name, attributes):
+        """
+        Find each pathname.  Compare contents with desired value.  Overwrite
+        if necessary.
+        """
+        paths = Runtime.core("rbd_*/{}/attrib".format(name))
+        for base in paths:
+            for attr in attributes.keys():
+                path = base + "/" + attr
+                logging.debug("Backstore attribute path {}".format(path))
+                if not os.path.isfile(path):
+                    raise RuntimeError("No such attribute {}".format(attr))
+                content = open(path).read().rstrip('\n')
+                if attributes[attr] != content:
+                    try:
+                        logging.info("Setting {} to {}".format(attr, attributes[attr]))
+                        file_attr = open(path, "w")
+                        file_attr.write(attributes[attr] + "\n")
+                        file_attr.close()
+                    except IOError:
+                        # Already in use
+                        pass
+              
+
 class Iscsi(object):
     """
     Creates iscsi entries with provided static target iqns or dynamically
@@ -1661,6 +1716,59 @@ class LunAssignment(object):
             return(self.assignments[target][image])
         return None
 
+class TPGattributes(object):
+    """
+    Allows the assignment of tpg attributes.  Any defined with the target
+    affect all related images.  
+    """
+    def __init__(self):
+        """
+        Define dict.  Set default values (e.g. "login_timeout": "10") that
+        are different than kernel default values
+        """
+        self.attributes = {} 
+
+    def assign(self):
+        """
+        Search targets and entries for tpg_ prefixed attributes and 
+        add/overwrite dict values.  Save each.
+        """
+
+        once = True
+        for tentry in Common.config['targets']:
+            for attr in tentry:
+                if re.match(r'tpg_', attr):
+                    tpg_attr = re.sub(r'tpg_', '', attr)
+                    self.attributes[tpg_attr] = tentry[attr]
+                    if once:
+                        logging.warning("Be aware that default values were used during testing and understand the impact of changing any TPG attributes.\n")
+                        once = False
+            self._save(tentry['target'])
+
+
+    def _save(self, target):
+        """
+        Find each pathname.  Compare contents with desired value.  Overwrite
+        if necessary.
+        """
+        paths = Runtime.path("{}/tpgt_*/attrib".format(target))
+        for base in paths:
+            for attr in self.attributes.keys():
+                path = base + "/" + attr
+                logging.debug("TPG attribute path {}".format(path))
+                if not os.path.isfile(path):
+                    raise RuntimeError("No such attribute {}".format(attr))
+                content = open(path).read().rstrip('\n')
+                if self.attributes[attr] != content:
+                    try:
+                        logging.info("Setting {} to {}".format(attr, self.attributes[attr]))
+                        file_attr = open(path, "w")
+                        file_attr.write(self.attributes[attr] + "\n")
+                        file_attr.close()
+                    except IOError:
+                        # Already in use
+                        pass
+
 class Portals(object):
     """
     Manage the creation of portals, skipping existing.  If none are provided
@@ -1860,6 +1968,7 @@ class Map(object):
 
         for pentry, gentry, entry in entries():
             target = iqn(gentry)
+            self.name = Runtime.backstore(pentry['pool'], entry)
             if 'target' in gentry:
                 if self._check_auth(gentry['target']):
                     self._check_initiator(entry, target, gentry['target'])
@@ -1907,8 +2016,10 @@ class Map(object):
             image - name of RBD image
         """
         lun_path = Runtime.path("{}/tpgt_{}/lun/lun_*/*".format(target, tpg))
+        logging.debug("lun path: {}".format(lun_path))
+        print "image: ", image
         for path in lun_path:
-            if basename(os.path.realpath(path)) == image:
+            if basename(os.path.realpath(path)) == self.name:
                 return re.split("[/_]", path)[11]
 
         raise ValueError("lun missing from tpg{} under target {}".format(tpg, target))
@@ -2516,12 +2627,16 @@ def main(args):
             images.map()
             backstores = Backstores(args.backstore)
             backstores.create()
+            backstore_attrs = BackstoreAttributes()
+            backstore_attrs.assign()
             iscsi = Iscsi()
             iscsi.create()
             lun_assignment = LunAssignment()
             tpgs = TPGs(TPGCounter(), PortalIndex(), lun_assignment)
             tpgs.create()
             tpgs.disable_remote()
+            tpg_attrs = TPGattributes()
+            tpg_attrs.assign()
             luns = Luns(lun_assignment)
             luns.create()
             portals = Portals()
