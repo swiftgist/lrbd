@@ -1334,8 +1334,8 @@ class Iscsi(object):
         Add branding
         """
         for pentry, gentry, entry in entries():
-            path = Runtime.core("{}_*/{}/wwn/vendor_id".format(Runtime.config['backstore'],
-                                                               entry['image']))
+            name = Runtime.backstore(pentry['pool'], entry)
+            path = Runtime.core("{}_*/{}/wwn/vendor_id".format(Runtime.config['backstore'], name))
             if path and os.path.isfile("/etc/SuSE-release"):
                 try:
                     vendor = open(path[0], "w")
