@@ -146,6 +146,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_unitdir}/lrbd.service
 %dir %attr(-, root, root) %{_docdir}/%{name}
 %dir %attr(-, root, root) %{_docdir}/%{name}/samples
+%{_docdir}/%{name}/README.migration
 %{_docdir}/%{name}/samples/*
 
 %changelog
