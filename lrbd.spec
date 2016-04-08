@@ -62,6 +62,7 @@ install -m 644 man/lrbd.8.gz %{buildroot}%{_mandir}/man8
 install -m 644 sysconfig/lrbd %{buildroot}/var/adm/fillup-templates/sysconfig.lrbd
 install -m 644 systemd/lrbd.service %{buildroot}%{_unitdir}
 ln -sf %{_sbindir}/service %{buildroot}%_sbindir/rclrbd
+install -m 644 README.migration %{buildroot}%{_docdir}/%{name}
 
 install -m 644 samples/acls+discovery.json  %{_samples}
 install -m 644 samples/acls+discovery+mutual.json  %{_samples}
@@ -96,16 +97,34 @@ install -m 644 samples/tpg+identified.json %{_samples}
 install -m 644 samples/2gateways+2images+2targets+no_authentication.json.NEW %{_samples}
 install -m 644 samples/2gateways+2images+assigned_lun+no_authentication.json.NEW %{_samples}
 install -m 644 samples/plain+uuid.json.NEW %{_samples}
-install -m 644 samples/plain+version.json.NEW %{_samples}
+install -m 644 samples/plain+wwn_generate.json.NEW %{_samples}
 install -m 644 samples/README.NEW %{_samples}
 
 
 %pre
+if [ "$1" == "2" ]
+then
+  # Upgrade from 1.0
+  grep -q wwn_generate %{_sbindir}/lrbd
+  if [ $? -ne 0 ]
+  then
+    cat > %{_localstatedir}/lib/misc/lrbd.disabled <<EOF
+Please migrate your existing configuration:
+lrbd -m 1.0 > /tmp/lrbd.conf-migrated
+lrbd -f /tmp/lrbd.conf-migrated
+rm -f %{_localstatedir}/lib/misc/lrbd.disabled
+
+See %{_docdir}/%{name}/README.migration for details.
+EOF
+  fi
+fi
 %service_add_pre lrbd.service 
 
 %post
 %service_add_post lrbd.service 
 %fillup_and_insserv
+
+
 
 %preun
 %service_del_preun lrbd.service 

@@ -42,15 +42,16 @@ class MapTestCase(unittest.TestCase):
     def test_lun(self, mock_os_path_basename, mock_subproc_glob):
 
         #mock_subproc_glob.return_value = 
-        mock_os_path_basename.return_value =  [ "/s/k/c/t/i/i/t/l/lun_0/archive" ]
+        mock_os_path_basename.return_value =  [ "/s/k/c/t/i/i/t/l/lun_0/rbd-archive" ]
                  
         class mock_Map(Map):
 
             def _cmd(self, target, tpg, initiator, lun):
                 self.called = " ".join([ target, str(tpg), initiator, lun ])
 
+
         self.m = mock_Map()
-        assert self.m.called == "iqn.xyz 1 iqn.abc archive"
+        assert self.m.called == "iqn.xyz 1 iqn.abc rbd-archive"
 
     @raises(ValueError)
     @mock.patch('glob.glob')

@@ -1,0 +1,42 @@
+
+# Transition from 1.0 to 1.1
+
+  If you have an existing production setup and need to retain the original default behavior, then run the following:
+
+`# lrbd -m 1.0 > /tmp/lrbd.conf-migrated`
+
+Inspect the contents.  Notice the addition of keywords wwn_generate and rbd_name.  Then, apply the configuration.
+
+`# lrbd -f /tmp/lrbd.conf-migrated`
+
+Remove disable flag from each gateway.
+
+`# rm -f /var/lib/misc/lrbd.disabled`
+
+### Two new defaults are set for 1.1  These are
+
+1. Rbd backstore name: The new default includes the pool name which allows the use of the images with the same name in different pools.  The effect changes the name of the backstore.  For example, an image named "city" inside of pool "rbd" will appear as
+
+o- / ..................................................................... [...]
+  o- backstores .......................................................... [...]  | o- rbd ................................................. [2 Storage Objects]
+  | | o- rbd-city ................................ [/dev/rbd/rbd/city activated]
+
+from `targetcli ls`.  In the original scheme, only the image name is used. 
+
+o- / ..................................................................... [...]
+  o- backstores .......................................................... [...]  | o- rbd ................................................. [2 Storage Objects]
+  | | o- city .................................... [/dev/rbd/rbd/city activated]
+
+Add the *rbd_name* keyword to any image that needs the original default.
+
+2. Dynamic wwn generation: The new default includes the pool name in addition to the target and image name when generating a hash.  This default allows the use of an image in more than one target.  To find the current values, run the following:
+
+`# lrbd -d 2>&1| grep ^uuid:`
+
+The output will be similar to
+
+uuid: b93f027b-70f1-3cd5-9f24-a395d7367a54
+uuid: f0c61181-ae82-3821-b255-594f5805549c
+
+Add the *wwn_generate* keyword to any target that needs the original default.
+

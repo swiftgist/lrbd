@@ -89,6 +89,7 @@ class MainTestCase(unittest.TestCase):
         self.args.output = False
         self.args.edit = True
         self.args.editor = None
+        self.args.migrate = False
         main(self.args)
         assert (mock_Configs.called and mock_Content.called)
 
@@ -102,6 +103,7 @@ class MainTestCase(unittest.TestCase):
         self.args.output = False
         self.args.edit = False
         self.args.local = True
+        self.args.migrate = False
         main(self.args)
         assert mock_Configs.called
 
@@ -111,11 +113,12 @@ class MainTestCase(unittest.TestCase):
     @mock.patch('lrbd.Iscsi')
     @mock.patch('lrbd.TPGs')
     @mock.patch('lrbd.Luns')
+    @mock.patch('lrbd.TPGattributes')
     @mock.patch('lrbd.Portals')
     @mock.patch('lrbd.Acls')
     @mock.patch('lrbd.Map')
     @mock.patch('lrbd.Auth')
-    def test_main_default(self, mock_Configs, mock_Images, mock_Backstores, mock_Iscsi, mock_TPGs, mock_Luns, mock_Portals, mock_Acls, mock_Map, mock_Auth):
+    def test_main_default(self, mock_Configs, mock_Images, mock_Backstores, mock_Iscsi, mock_TPGs, mock_Luns, mock_Portals, mock_TPGattributes, mock_Acls, mock_Map, mock_Auth):
         self.args.wipe = False
         self.args.clear = False
         self.args.unmap = False
@@ -124,6 +127,7 @@ class MainTestCase(unittest.TestCase):
         self.args.output = False
         self.args.edit = False
         self.args.local = False
+        self.args.migrate = False
         self.args.backstore = "iblock"
         main(self.args)
         assert (mock_Configs.called and
@@ -133,6 +137,7 @@ class MainTestCase(unittest.TestCase):
                 mock_TPGs.called and
                 mock_Luns.called and
                 mock_Portals.called and
+                mock_TPGattributes.called and
                 mock_Acls.called and
                 mock_Map.called and
                 mock_Auth.called)

@@ -1013,6 +1013,22 @@ class Configs(object):
         for cmd in cmds:
             popen(cmd)
 
+    def migrate(self, version):
+        """
+        Defaults have changed.  Add keywords to relevant sections to keep
+        previous default behavior.
+        """
+        if version == "1.0":
+            for entry in Common.config['targets']:
+                if 'target' in entry:
+                    entry['wwn_generate'] = "original"
+
+            for pentry, gentry, entry in entries():
+                if 'image' in entry:
+                    entry['rbd_name'] = "simple"
+        else:
+            raise RuntimeError("Migration of version {} unsupported\nSupported versions: 1.0".format(version))
+
 class Gateways(object):
     """
     Adds the gateways to the pools section.  If host_only is true, then
@@ -2017,7 +2033,6 @@ class Map(object):
         """
         lun_path = Runtime.path("{}/tpgt_{}/lun/lun_*/*".format(target, tpg))
         logging.debug("lun path: {}".format(lun_path))
-        print "image: ", image
         for path in lun_path:
             if basename(os.path.realpath(path)) == self.name:
                 return re.split("[/_]", path)[11]
@@ -2565,6 +2580,16 @@ class Auth(object):
                 popen(cmd)
 
 
+def disable_check():
+    """
+    """
+    filename = "/var/lib/misc/lrbd.disabled"
+    if os.path.isfile(filename):
+        upgrade_instructions = open(filename).read().rstrip('\n')
+        raise RuntimeError("lrbd has been intentionally disabled by an upgrade.\n\n" + upgrade_instructions)
+    
+
+
 def main(args):
     """
     Apply stored configuration by default.  Otherwise, execute the alternate
@@ -2572,6 +2597,8 @@ def main(args):
 
         args - expects parse_args() result from argparse
     """
+    disable_check()
+
     configs = Configs(args.config, args.ceph, args.host)
     logging.basicConfig(format='%(levelname)s: %(message)s')
 
@@ -2609,6 +2636,10 @@ def main(args):
         gateways = Gateways(sections)
         if args.output:
             configs.retrieve(Cluster(), sections, gateways)
+            configs.display()
+        elif args.migrate:
+            configs.retrieve(Cluster(), sections, gateways)
+            configs.migrate(args.migrate)
             configs.display()
         elif args.edit:
             conn = Cluster()
@@ -2678,6 +2709,8 @@ if __name__ == "__main__":
                         help='print INFO messages')
     parser.add_argument('-d', '--debug', action='store_true', dest='debug',
                         help='print DEBUG messages')
+    parser.add_argument('-m', '--migrate', action='store', dest='migrate',
+                        help='output migrated configuration', metavar='migrate')
     parser.add_argument('-I', '--iblock', action='store_const',
                         dest='backstore', const='iblock',
                         help='set the backstore to iblock, defaults to rbd')
