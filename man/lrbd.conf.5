@@ -32,7 +32,13 @@ by a gateway host, shared via an iSCSI target and accessed by an iSCSI
 initiator.  Likewise, multiple pools may contain multiple RBD images, which
 can be mapped by multiple gateways and accessed by multiple initiators.
 Additionally, gateways may grant access across multiple network paths or 
-portals. The following JSON structure represents the pool configuration:
+portals. 
+.PP
+The image name is the name of the rbd image, the portal group is the name of the associated entry in the portal section and the initiator iqn matches clients for acl authentication.
+.PP
+The optional keywords are uuid, lun, rbd_name and all backstore attributes.  The uuid allows static assignment of the uuid and overrides the wwn_generate setting in the target section.  By default, luns are assigned dynamically.  Specify the lun keyword to assign a lun to a sepcific image.  The rbd_name keyword is a backward compatibility option to only use the image name for the backstore. The only accepted value is simple.  The default backstore name is pool name, hyphen and rbd name.  Any backstore attribute listed in the 
+.B Tunable Attributes 
+section below may be added as well.  The following JSON structure represents the pool configuration:
 .PP
 .RS 2
 "pools": [ 
@@ -65,12 +71,34 @@ portals. The following JSON structure represents the pool configuration:
 .RS 0
 "initiator":
 .I initiator_iqn
+,
+.RS 0
+"uuid": 
+.I unique_identifier
+,
+.RS 0
+"lun": 
+.I number
+,
+.RS 0
+"rbd_name": 
+simple
+,
+.RS 0
+"backstore_
+.I attribute
+":
+.I value
+.RE
+.RE
+.RE
 .RE
 .RE
 .RE
 }, ... 
 .RE
 ],
+.RE
 .RS 0
 "target": 
 .I target_iqn
@@ -86,6 +114,27 @@ portals. The following JSON structure represents the pool configuration:
 .RS 0
 "initiator":
 .I initiator_iqn
+,
+.RS 0
+"uuid": 
+.I unique_identifier
+,
+.RS 0
+"lun": 
+.I number
+,
+.RS 0
+"rbd_name": 
+simple
+,
+.RS 0
+"backstore_
+.I attribute
+":
+.I value
+.RE
+.RE
+.RE
 .RE
 .RE
 }, ... 
@@ -253,6 +302,12 @@ The target structure is stored in the extended attribute
 .B targets.
 A target is associated with a host or group of hosts.  For locally configured targets, use the host attribute.  For redundantly configured targets, use hosts.
 .PP
+The wwn_generate keyword is a backward compatible option and only required for configurations requiring the original wwn generation using target and image.  The default generation uses pool, target and image.
+.PP
+Any tpg attribute listed in the 
+.B Tunable Attributes
+section below may be added as well.
+.PP
 .RS 2
 "target": [
 .RS 2
@@ -273,14 +328,25 @@ A target is associated with a host or group of hosts.  For locally configured ta
 .RE
 }, ... 
 .RE
-],
+.RS 0
+"wwn_generate":
+original
+,
+.RS 0
+"tpg_
+.I attribute
+":
+.I value
+.RE
+.RE
+.RE
 .RE
 .RE
 }, ...
 .RE
 ]
 .RE
-.SS Portals
+.SS PORTALS
 The portal section contains named groups of addresses.  Within a pool 
 configuration, a tpg section references a portal group.  Multiple
 addresses provide redundancy on a single gateway or across multiple gateways.
@@ -317,6 +383,95 @@ An address may contain a port delimited by space, such as "192.168.1.100 3261".
 .RE
 ]
 .RE
+.SH TUNABLE ATTRIBUTES
+Several kernel parameters are available for modifying tpg and backstore behavior.  All are optional and listed separately to keep the Pools and Targets sections simpler.  
+.PP
+Changing these values requires consideration and testing.  The TPG related attributes are prefixed with tpg_ and can be included in the targets section.  The backstore related attributes are prefixed with backstore_ and can be included in the Pools section.
+.PP
+The TPG attributes are:
+.RS 2
+tpg_login_timeout
+.RS 0
+tpg_default_cmdsn_depth
+.RS 0
+tpg_default_erl
+.RS 0
+tpg_login_timeout
+.RS 0
+tpg_netif_timeout
+.RS 0
+tpg_prod_mode_write_protect
+.RS 0
+tpg_t10_pi
+.RE
+.RE
+.RE
+.RE
+.RE
+.RE
+.RE
+.PP
+The backstore attributes are:
+.RS 2
+backstore_block_size
+.RS 0
+backstore_emulate_3pc
+.RS 0
+backstore_emulate_caw
+.RS 0
+backstore_emulate_dpo
+.RS 0
+backstore_emulate_fua_read
+.RS 0
+backstore_emulate_fua_write
+.RS 0
+backstore_emulate_model_alias
+.RS 0
+backstore_emulate_rest_reord
+.RS 0
+backstore_emulate_tas
+.RS 0
+backstore_emulate_tpu
+.RS 0
+backstore_emulate_tpws
+.RS 0
+backstore_emulate_ua_intlck_ctrl
+.RS 0
+backstore_emulate_write_cache
+.RS 0
+backstore_enforce_pr_isids
+.RS 0
+backstore_fabric_max_sectors
+.RS 0
+backstore_hw_block_size
+.RS 0
+backstore_hw_max_sectors
+.RS 0
+backstore_hw_pi_prot_type
+.RS 0
+backstore_hw_queue_depth
+.RS 0
+backstore_is_nonrot
+.RS 0
+backstore_max_unmap_block_desc_count
+.RS 0
+backstore_max_unmap_lba_count
+.RS 0
+backstore_max_write_same_len
+.RS 0
+backstore_optimal_sectors
+.RS 0
+backstore_pi_prot_format
+.RS 0
+backstore_pi_prot_type
+.RS 0
+backstore_queue_depth
+.RS 0
+backstore_unmap_granularity
+.RS 0
+backstore_unmap_granularity_alignment
+.RE
+
 .SH INTERACTION WITH TARGET SERVICE
 The target service restores a local, saved configuration when enabled.  The
 target service is unnecessary for the lrbd service since the configuration
@@ -342,6 +497,8 @@ will remove all configuration applied from either method.
 The configuration is validated syntactically only.  It's quite possible to
 overcomplicate a configuration unnecessarily by creating multiple targets or
 tpgs when fewer are needed.
+.PP
+Additions and modifications of existing settings will behave as expected when a changed configuration is reapplied.  Renames and deletions may require clearing the configuration to remove the previous state.
 .RE
 .SH FILES
 .I /usr/share/doc/packages/lrbd/samples/*

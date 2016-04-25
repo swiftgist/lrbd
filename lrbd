@@ -2710,7 +2710,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--debug', action='store_true', dest='debug',
                         help='print DEBUG messages')
     parser.add_argument('-m', '--migrate', action='store', dest='migrate',
-                        help='output migrated configuration', metavar='migrate')
+                        help='output migrated configuration', metavar='version')
     parser.add_argument('-I', '--iblock', action='store_const',
                         dest='backstore', const='iblock',
                         help='set the backstore to iblock, defaults to rbd')
