@@ -94,10 +94,13 @@ install -m 644 samples/2gateways+tpg+identified.json %{_samples}
 install -m 644 samples/3gateways+tpg+identified.json %{_samples}
 install -m 644 samples/tpg+identified+mutual+discovery+mutual.json %{_samples}
 install -m 644 samples/tpg+identified.json %{_samples}
-install -m 644 samples/2gateways+2images+2targets+no_authentication.json.NEW %{_samples}
-install -m 644 samples/2gateways+2images+assigned_lun+no_authentication.json.NEW %{_samples}
-install -m 644 samples/plain+uuid.json.NEW %{_samples}
-install -m 644 samples/plain+wwn_generate.json.NEW %{_samples}
+install -m 644 samples/2gateways+2images+2targets+no_authentication.json %{_samples}
+install -m 644 samples/2gateways+2images+assigned_lun+no_authentication.json %{_samples}
+install -m 644 samples/plain+uuid.json %{_samples}
+install -m 644 samples/plain+wwn_generate.json %{_samples}
+install -m 644 samples/nonstandard_port+no_authentication.json %{_samples}
+install -m 644 samples/plain+attributes.json %{_samples}
+install -m 644 samples/plain+rbd_name.json %{_samples}
 install -m 644 samples/README.NEW %{_samples}
 
 
