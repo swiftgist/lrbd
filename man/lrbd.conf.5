@@ -36,9 +36,24 @@ portals.
 .PP
 The image name is the name of the rbd image, the portal group is the name of the associated entry in the portal section and the initiator iqn matches clients for acl authentication.
 .PP
-The optional keywords are uuid, lun, rbd_name and all backstore attributes.  The uuid allows static assignment of the uuid and overrides the wwn_generate setting in the target section.  By default, luns are assigned dynamically.  Specify the lun keyword to assign a lun to a sepcific image.  The rbd_name keyword is a backward compatibility option to only use the image name for the backstore. The only accepted value is simple.  The default backstore name is pool name, hyphen and rbd name.  Any backstore attribute listed in the 
+.B Optional Keywords 
+.RS 2
+The optional keywords are uuid, lun, rbd_name, retries, sleep, retry_errors and all backstore attributes.  
+.PP
+The uuid allows static assignment of the uuid and overrides the wwn_generate setting in the target section.  
+.PP
+By default, luns are assigned dynamically.  Specify the lun keyword to assign a lun to a specific image.  
+.PP
+The rbd_name keyword is a backward compatibility option to only use the image name for the backstore. The only accepted value is simple.  The default backstore name is pool name, hyphen and rbd name.  
+.PP
+The retries, sleep and retry_errors are related to mapping an image.  The default behavior will attempt to map an image 3 times, will wait 4 seconds per attempt between attempts and only retry on the error "Operation not supported".  Specify any of retries, sleep or retry_errors per image to suit your needs.
+.PP
+Any backstore attribute listed in the 
 .B Tunable Attributes 
-section below may be added as well.  The following JSON structure represents the pool configuration:
+section below may be added as well.  
+
+.RE
+The following JSON structure represents the pool configuration:
 .PP
 .RS 2
 "pools": [ 
@@ -85,10 +100,26 @@ section below may be added as well.  The following JSON structure represents the
 simple
 ,
 .RS 0
+"retries": 
+.I number
+,
+.RS 0
+"sleep": 
+.I wait_time
+,
+.RS 0
+"retry_errors": 
+[
+.I error_code
+, ... ],
+.RS 0
 "backstore_
 .I attribute
 ":
 .I value
+.RE
+.RE
+.RE
 .RE
 .RE
 .RE
@@ -127,6 +158,19 @@ simple
 "rbd_name": 
 simple
 ,
+.RS 0
+"retries": 
+.I number
+,
+.RS 0
+"sleep": 
+.I wait_time
+,
+.RS 0
+"retry_errors": 
+[
+.I error_code
+, ... ],
 .RS 0
 "backstore_
 .I attribute
