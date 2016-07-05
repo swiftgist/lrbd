@@ -189,6 +189,8 @@ class Common(object):
     config_name = ""
     ceph_conf = ""
     hostname = ""
+    pool_list = [] 
+    client_name = ""
 
     @staticmethod
     def assign(sections):
@@ -624,7 +626,7 @@ class Cluster(object):
         """
         Connect to Ceph, return connection
         """
-        self.cluster = rados.Rados(conffile=Common.ceph_conf)
+        self.cluster = rados.Rados(conffile=Common.ceph_conf, name=Common.client_name)
         try:
             self.cluster.connect()
         except rados.ObjectNotFound:
@@ -920,7 +922,7 @@ class Configs(object):
     classes.
     """
 
-    def __init__(self, config_name, ceph_conf, hostname):
+    def __init__(self, config_name, ceph_conf, hostname, client_name, pool_list):
         """
         Set initial overrides and assign to Common configuration
 
@@ -928,19 +930,24 @@ class Configs(object):
                           in Ceph
             ceph_conf - an alternative Ceph configuration file
             hostname - specify an alternative gateway host
+            client_name - specify a Ceph client name for authentication
+            pool_list - specify a pool list
         """
         self.config_name = config_name if config_name else "lrbd.conf"
         self.ceph_conf = ceph_conf if ceph_conf else "/etc/ceph/ceph.conf"
 
-
         if not os.path.isfile(self.ceph_conf):
             raise IOError("{} does not exist".format(self.ceph_conf))
 
+        self.client_name = client_name if client_name else "client.admin"
         self.hostname = hostname if hostname else socket.gethostname()
+        self.pool_list = pool_list if pool_list else None
 
         Common.config_name = self.config_name
         Common.ceph_conf = self.ceph_conf
         Common.hostname = self.hostname
+        Common.client_name = self.client_name
+        Common.pool_list = self.pool_list
 
     def retrieve(self, conn, sections, gateways):
         """
@@ -949,7 +956,9 @@ class Configs(object):
         Common.config
         """
         with conn as cluster:
-            for pool in cluster.list_pools():
+            if self.pool_list is None:
+                self.pool_list = cluster.list_pools()
+            for pool in self.pool_list:
                 pool_id = cluster.pool_lookup(pool)
                 tier_id = cluster.get_pool_base_tier(pool_id)
                 if (pool_id != tier_id):
@@ -1019,8 +1028,9 @@ class Configs(object):
         """
         #conn = Cluster()
         with conn as cluster:
-            pools = cluster.list_pools()
-            for pool in pools:
+            if self.pool_list is None:
+                self.pool_list = cluster.list_pools()
+            for pool in self.pool_list:
                 conn = Ioctx(cluster, pool)
                 with conn as ioctx:
                     try:
@@ -1164,7 +1174,7 @@ class Images(object):
            key = pentry['pool'] + ":" + entry['image']
            if not key in self.map_cmds:
                self.map_cmds[key] = {}
-           self.map_cmds[key]['cmd'] = [ "rbd", "-p", pentry['pool'], "map", entry['image'] ]
+           self.map_cmds[key]['cmd'] = [ "rbd", "-p", pentry['pool'], "--name", Common.client_name, "map", entry['image'] ]
            # Default list: 95, Operation not supported
            self.map_cmds[key]['custom'] = { 'retry_errors' : [ 95 ] }
            for attr in [ 'retries', 'sleep', 'retry_errors' ]:
@@ -2641,7 +2651,7 @@ def main(args):
     """
     disable_check()
 
-    configs = Configs(args.config, args.ceph, args.host)
+    configs = Configs(args.config, args.ceph, args.host, args.name, args.pools)
     logging.basicConfig(format='%(levelname)s: %(message)s')
 
     if args.verbose or args.wipe or args.host:
@@ -2737,6 +2747,11 @@ if __name__ == "__main__":
     parser.add_argument('-H', '--host', action='store', dest='host',
                         help='specify the hostname, defaults to "{}"'.
                         format(socket.gethostname()), metavar='host')
+    parser.add_argument('-n', '--name', action='store', dest='name',
+                        help='specify the client name for Ceph authentication, defaults to "client.admin"',
+                        metavar='name')
+    parser.add_argument('-p', '--pools', nargs='+', action='store', dest='pools',
+                        help='specify a pool list (space separated)', metavar='pools')
     parser.add_argument('-o', '--output', action='store_true', dest='output',
                         help='display the configuration')
     parser.add_argument('-l', '--local', action='store_true', dest='local',
