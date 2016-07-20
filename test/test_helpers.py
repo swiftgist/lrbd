@@ -74,9 +74,3 @@ class HelpersTestCase(unittest.TestCase):
         b = [ [ "cmd1", "arg1" ] ]
         print uniq(a)
         assert uniq(a) == b
-
-    def test_uniq_sorts(self):
-        a = [ [ "cmd2", "arg1" ],  [ "cmd1", "arg1" ] ]
-        b = [ [ "cmd1", "arg1" ],  [ "cmd2", "arg1" ] ]
-        assert uniq(a) == b
-

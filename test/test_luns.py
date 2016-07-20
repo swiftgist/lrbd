@@ -2,6 +2,7 @@
 from lrbd import Luns, Common, Runtime, entries
 import unittest, mock
 import re, tempfile
+import logging
 
 class LunsTestCase(unittest.TestCase):
 
@@ -26,7 +27,7 @@ class LunsTestCase(unittest.TestCase):
             def _cmd(self, target, tpg, address):
                 self.called = " ".join([ target, str(tpg), address ])
 
-        self.l = mock_Luns()
+        self.l = mock_Luns(None)
         assert self.l.called == "iqn.xyz 1 archive"
 
     @mock.patch('glob.glob')
@@ -37,7 +38,7 @@ class LunsTestCase(unittest.TestCase):
             def _cmd(self, target, tpg, address):
                 self.called = " ".join([ target, str(tpg), address ])
 
-        self.l = mock_Luns()
+        self.l = mock_Luns(None)
         assert self.l.exists == {'iqn.xyz': {}}
 
     @mock.patch('glob.glob')
@@ -52,7 +53,7 @@ class LunsTestCase(unittest.TestCase):
             tmpfile.write("/dev/rbd/rbd/archive\n")
             tmpfile.flush()
             mock_subproc_glob.return_value = [ tmpfile.name ]
-            self.l = mock_Luns()
+            self.l = mock_Luns(None)
             assert self.l.exists == {'iqn.xyz': {'1': ['archive']}}
 
 
@@ -64,8 +65,18 @@ class LunsTestCase(unittest.TestCase):
             def _find(self):
                 pass
 
-        self.l = mock_Luns()
-        assert self.l.cmds == [ ['targetcli', '/iscsi/iqn.xyz/tpg1/luns', 'create', '/backstores/rbd/archive'] ]
+        class mock_LunAssignment(object):
+            def assign(self, target, tpg, image, lun):
+                pass
+
+            def assigned(self, target, image):
+                pass
+
+        logging.disable(logging.DEBUG)
+        _la = mock_LunAssignment()
+        self.l = mock_Luns(_la)
+        print self.l.unassigned
+        assert self.l.unassigned == [ ['targetcli', '/iscsi/iqn.xyz/tpg1/luns', 'create', '/backstores/rbd/archive'] ]
 
 
 
@@ -83,7 +94,7 @@ class LunsTestCase(unittest.TestCase):
             def disable_auto_add_mapped_luns(self):
                 pass
 
-        self.l = mock_Luns()
+        self.l = mock_Luns(None)
         mock_subproc_popen.return_value = []
         self.l.create()
 
@@ -100,7 +111,15 @@ class LunsTestCase(unittest.TestCase):
             def disable_auto_add_mapped_luns(self):
                 pass
 
-        self.l = mock_Luns()
+        class mock_LunAssignment(object):
+            def assign(self, target, tpg, image, lun):
+                pass
+
+            def assigned(self, target, image):
+                pass
+
+        _la = mock_LunAssignment()
+        self.l = mock_Luns(_la)
         mock_subproc_popen.return_value = []
         self.l.create()
 

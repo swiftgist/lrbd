@@ -49,6 +49,7 @@ class MapTestCase(unittest.TestCase):
             def _cmd(self, target, tpg, initiator, lun):
                 self.called = " ".join([ target, str(tpg), initiator, lun ])
 
+
         self.m = mock_Map()
         assert self.m.called == "iqn.xyz 1 iqn.abc archive"
 

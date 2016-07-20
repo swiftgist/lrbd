@@ -1,0 +1,50 @@
+{
+  "auth": [
+    {
+      "authentication": "none", 
+      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+    }
+  ], 
+  "targets": [
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+    }
+  ], 
+  "portals": [
+      {
+          "name": "portal1",
+          "addresses": [ "172.16.1.16" ]
+      },
+      {
+          "name": "portal2",
+          "addresses": [ "172.16.1.17" ]
+      }
+  ],
+  "pools": [
+    {
+      "pool": "rbd",
+      "gateways": [
+        {
+          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
+          "tpg": [
+            {
+              "image": "city",
+              "lun": "2"
+            },
+            {
+              "image": "wood",
+              "lun": "0"
+            },
+            {
+              "image": "writers"
+            }
+          ] 
+        } 
+      ] 
+    } 
+  ]
+}

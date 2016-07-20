@@ -69,6 +69,22 @@ class BackstoresTestCase(unittest.TestCase):
         self.b = Backstores("iblock")
         assert self.b.cmds == [['targetcli', '/backstores/iblock', 'create', 'name=archive', 'dev=/dev/rbd/rbd/archive']]
 
+    def test_iblock_simple(self):
+
+        Common.config = { 
+            "pools": [ 
+                { "pool": "rbd", 
+                  "gateways": [
+                    { "host": "igw1", "tpg": [ 
+                      { "image": "archive", "rbd_name": "simple" } 
+                        ] 
+                    } ] 
+                } ] }
+
+        self.b = Backstores("iblock")
+        print self.b.cmds
+        assert self.b.cmds == [['targetcli', '/backstores/iblock', 'create', 'name=archive', 'dev=/dev/rbd/rbd/archive']]
+
     @mock.patch('glob.glob')
     def test_iblock_does_nothing(self, mock_subproc_glob):
         Common.config = { 
@@ -129,6 +145,24 @@ class BackstoresTestCase(unittest.TestCase):
                   "gateways": [
                     { "host": "igw1", "tpg": [ 
                         { "image": "archive" } 
+                        ] 
+                    } ] 
+                } ] }
+        class mock_Backstores(Backstores):
+              def _load_modules(self):
+                  pass
+
+        self.b = mock_Backstores("rbd")
+        assert self.b.cmds == [['targetcli', '/backstores/rbd', 'create', 'name=archive', 'dev=/dev/rbd/rbd/archive']]
+
+    def test_rbd_simple(self):
+
+        Common.config = { 
+            "pools": [ 
+                { "pool": "rbd", 
+                  "gateways": [
+                    { "host": "igw1", "tpg": [ 
+                      { "image": "archive", "rbd_name": "simple" } 
                         ] 
                     } ] 
                 } ] }
