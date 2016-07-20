@@ -2663,7 +2663,11 @@ def main(args):
     if args.wipe:
         configs.wipe(Cluster())
     elif args.clear:
-        configs.clear()
+        try:
+            configs.clear()
+        except RuntimeError:
+            # Kernel modules are already unloaded
+            pass
         if args.unmap:
             images = Images()
             images.unmap()
