@@ -13,6 +13,8 @@ class MainTestCase(unittest.TestCase):
         self.args.host = None
         self.args.verbose = False
         self.args.debug = False
+        self.args.name = "client.admin"
+        self.args.pools = []
 
     @mock.patch('lrbd.Configs.wipe')
     def test_main_wipe(self, mock_subproc_wipe):
