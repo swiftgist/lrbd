@@ -1604,6 +1604,27 @@ class TPGs(object):
                         if not addr in Runtime.config['addresses']:
                             self._disable_tpg(target, tpg)
 
+    def disable_all(self):
+        """
+        Find all portals on each tpg and disable
+        """
+        for target, image, portal, tpg in self.portal_index.entries():
+            for entry in Common.config['portals']:
+                if portal == entry['name']:
+                    self._disable_tpg(target, tpg)
+
+    def enable_local(self):
+        """
+        Find local portals on each tpg and enable
+        """
+        for target, image, portal, tpg in self.portal_index.entries():
+            for entry in Common.config['portals']:
+                if portal == entry['name']:
+                    for address in entry['addresses']:
+                        addr = re.split(" ", address)[0]
+                        if addr in Runtime.config['addresses']:
+                            self._enable_tpg(target, tpg)
+
 
     def _disable_tpg(self, target, tpg):
         """
@@ -1624,6 +1645,26 @@ class TPGs(object):
         if enabled == "1":
             popen(["targetcli", "/{}/{}/tpg{}".
                    format(Runtime.fabric, target, tpg), "disable"])
+
+    def _enable_tpg(self, target, tpg):
+        """
+        Enable TPG and enable tpg_enabled_sendtargets.
+        """
+        path = Runtime.path("{}/tpgt_{}/attrib/tpg_enabled_sendtargets".
+                            format(target, tpg))[0]
+        if not os.path.isfile(path):
+            raise RuntimeError("tpg_enabled_sendtargets unsupported, " +
+                               "upgrade kernel to 3.12.46-102-default or higher")
+        tes = open(path, "w")
+        tes.write("1")
+        tes.close()
+        logging.debug("Enabling tpg_enabled_sendtargets for tpg " +
+                      "{} under target {}".format(tpg, target))
+        tpg_path = Runtime.path("{}/tpgt_{}/enable".format(target, tpg))[0]
+        enabled = open(tpg_path).read().rstrip('\n')
+        if enabled == "0":
+            popen(["targetcli", "/{}/{}/tpg{}".
+                   format(Runtime.fabric, target, tpg), "enable"])
 
 
     def _cmd(self, target, tpg):
@@ -2721,7 +2762,7 @@ def main(args):
             lun_assignment = LunAssignment()
             tpgs = TPGs(TPGCounter(), PortalIndex(), lun_assignment)
             tpgs.create()
-            tpgs.disable_remote()
+            tpgs.disable_all()
             tpg_attrs = TPGattributes()
             tpg_attrs.assign()
             luns = Luns(lun_assignment)
@@ -2734,6 +2775,7 @@ def main(args):
             maps.map()
             auth = Auth()
             auth.create()
+            tpgs.enable_local()
 
 
 # Main
