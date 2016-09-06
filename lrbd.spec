@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 1.1
+Version: 1.2
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
@@ -63,6 +63,7 @@ install -m 644 sysconfig/lrbd %{buildroot}/var/adm/fillup-templates/sysconfig.lr
 install -m 644 systemd/lrbd.service %{buildroot}%{_unitdir}
 ln -sf %{_sbindir}/service %{buildroot}%_sbindir/rclrbd
 install -m 644 README.migration %{buildroot}%{_docdir}/%{name}
+install -m 644 LICENSE %{buildroot}%{_docdir}/%{name}
 
 install -m 644 samples/acls+discovery.json  %{_samples}
 install -m 644 samples/acls+discovery+mutual.json  %{_samples}
@@ -151,6 +152,7 @@ rm -rf $RPM_BUILD_ROOT
 %dir %attr(-, root, root) %{_docdir}/%{name}
 %dir %attr(-, root, root) %{_docdir}/%{name}/samples
 %{_docdir}/%{name}/README.migration
+%{_docdir}/%{name}/LICENSE
 %{_docdir}/%{name}/samples/*
 
 %changelog
