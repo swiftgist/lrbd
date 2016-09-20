@@ -1141,7 +1141,7 @@ class Iscsi:
                     _uuid = uuid.uuid3(uuid.NAMESPACE_DNS, 
                                 str(gentry['target'] + entry['image']))
                     logging.debug("For image {} on target {}\nuuid: {}".format(entry['image'], gentry['target'], _uuid))
-                    path = glob.glob(TARGET + "/core/{}_*/{}/wwn/vpd_unit_serial".format(Runtime.config['backstore'], entry['image']))
+                    path = self._glob_retry(TARGET + "/core/{}_*/{}/wwn/vpd_unit_serial".format(Runtime.config['backstore'], entry['image']))
                     try:
                         vus = open(path[0], "w")
                         vus.write(str(_uuid) + "\n")
@@ -1155,7 +1155,7 @@ class Iscsi:
         Add branding 
         """
         for pentry, gentry, entry in entries():
-            path = glob.glob(TARGET + "/core/{}_*/{}/wwn/vendor_id".format(Runtime.config['backstore'], entry['image']))
+            path = self._glob_retry(TARGET + "/core/{}_*/{}/wwn/vendor_id".format(Runtime.config['backstore'], entry['image']))
             if (path and os.path.isfile("/etc/SuSE-release")):
                 try:
                     vendor = open(path[0], "w")
@@ -1175,9 +1175,29 @@ class Iscsi:
         if self.iqns:
             Common.config['iqns'] = self.iqns
         else:
-            path = glob.glob(TARGET + "/iscsi/iqn*")
+            path = self._glob_retry(TARGET + "/iscsi/iqn*")
             Common.config['iqns'] = [ basename(path[0]) ]
         logging.debug("Common.config['iqns']: {}".format(Common.config['iqns']))
+
+    def _glob_retry(self, globpath):
+        """
+        Potential race condition where the previous steps have succeeded and
+        yet the pathname does not exist
+        """
+        retries = 3
+        sleep = 4
+        for attempt in range(1, retries + 1):
+            logging.info("globbing {}".format(globpath))
+            pathname = glob.glob(globpath)
+            if pathname:
+                return pathname
+            if (attempt < retries):
+                wait_time = sleep * attempt
+                logging.info("Waiting {} seconds to try again".format(wait_time))
+                time.sleep(wait_time)
+        msg = "No match for {}".format(globpath)
+        logging.debug(msg)
+        raise RuntimeError(msg)
 
 
 class TPGs:
