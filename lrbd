@@ -21,7 +21,7 @@ import argparse
 import rados, json
 import tempfile, os
 #import rados, rbd, json
-#import sys, tempfile, os
+import sys
 from subprocess import call, Popen, PIPE
 import re, socket
 import pprint
@@ -2681,6 +2681,17 @@ def disable_check():
         upgrade_instructions = open(filename).read().rstrip('\n')
         raise RuntimeError("lrbd has been intentionally disabled by an upgrade.\n\n" + upgrade_instructions)
     
+def sysconfig_options(filename="/etc/sysconfig/lrbd"):
+    """
+    Return any provided options
+    """
+    if os.path.isfile(filename):
+        with open(filename) as options:
+            for line in options:
+                if 'LRBD_OPTIONS' in line:
+                    parts = filter(None, re.split(r'[\'="]', line))
+                    return parts[1].split()
+    return []
 
 
 def main(args):
@@ -2700,6 +2711,8 @@ def main(args):
 
     if args.debug:
         logging.getLogger().level = logging.DEBUG
+
+    logging.info("Executing {}".format(" ".join(sys.argv)))
 
     if args.wipe:
         configs.wipe(Cluster())
@@ -2780,6 +2793,7 @@ def main(args):
 
 # Main
 if __name__ == "__main__":
+    sys.argv.extend(sysconfig_options())
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-e', '--edit', action='store_true', dest='edit', default=False,
