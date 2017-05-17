@@ -827,7 +827,7 @@ class Targets(object):
                 raise RuntimeError("Missing keyword target from entry in targets section.")
             if 'hosts' in entry:
                 for hentry in entry['hosts']:
-                    if Common.hostname == hentry['host']:
+                    if hentry['host'] in Common.hostname:
                         targets.append(entry['target'])
         return targets
 
@@ -849,12 +849,12 @@ class Targets(object):
         """
         for entry in self.targets:
             if 'host' in entry:
-                if Common.hostname != entry['host']:
+                if entry['host'] not in Common.hostname:
                     self.targets.remove(entry)
             if 'hosts' in entry:
                 found = False
                 for hentry in entry['hosts']:
-                    if Common.hostname == hentry['host']:
+                    if hentry['host'] in Common.hostname:
                         found = True
                 if not found:
                     self.targets.remove(entry)
@@ -903,7 +903,7 @@ class Authentications(object):
         """
         for entry in self.authentications:
             if 'host' in entry:
-                if Common.hostname != entry['host']:
+                if entry['host'] not in Common.hostname:
                     self.authentications.remove(entry)
 
 
@@ -940,7 +940,7 @@ class Configs(object):
             raise IOError("{} does not exist".format(self.ceph_conf))
 
         self.client_name = client_name if client_name else "client.admin"
-        self.hostname = hostname if hostname else socket.gethostname()
+        self.hostname = [hostname] if hostname else [socket.gethostname(), socket.getfqdn()]
         self.pool_list = pool_list if pool_list else None
 
         Common.config_name = self.config_name
@@ -1108,7 +1108,7 @@ class Gateways(object):
         Add a gateway specifically for a host or for all hosts
         """
         if self.host_only:
-            if key in self.targets or key == hostname:
+            if key in self.targets or key in hostname:
                 content = json.loads(value,
                                      object_pairs_hook=OrderedDict)
                 self.sections["pools"].append('gateways', content)
@@ -2805,8 +2805,8 @@ if __name__ == "__main__":
     parser.add_argument('--ceph', action='store', dest='ceph',
                         help='specify the ceph configuration file', metavar='ceph')
     parser.add_argument('-H', '--host', action='store', dest='host',
-                        help='specify the hostname, defaults to "{}"'.
-                        format(socket.gethostname()), metavar='host')
+                        help='specify the hostname, defaults to either "{}" or "{}"'.
+                        format(socket.gethostname(), socket.getfqdn()), metavar='host')
     parser.add_argument('-n', '--name', action='store', dest='name',
                         help='specify the client name for Ceph authentication, defaults to "client.admin"',
                         metavar='name')
