@@ -39,7 +39,7 @@ set the Ceph configuration file.  The default is /etc/ceph/ceph.conf.
 .PP
 \-H host, \-\-host host
 .RS 4
-specify the hostname which defaults to gethostname(). 
+specify the hostname which matches either gethostname() or getfqdn() by default.
 .RE
 .PP
 \-o, \-\-output
@@ -157,11 +157,11 @@ $ lrbd -H gateway2 -l
 .SH FILES
 .I /etc/sysconfig/lrbd
 .RS
-The environment file for customizing options for the lrbd.service
+The environment file for customizing options for the lrbd.service.  Any options are automatically included when running at the command line.
 .RE
 .I /usr/lib/systemd/system/lrbd.service
 .RS
-The service file to apply the configuration during boot.  
+The service file to apply the configuration during boot.
 .RE
 .SH AUTHOR
 Eric Jackson <ejackson@suse.com>
