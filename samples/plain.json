@@ -2,7 +2,7 @@
     "targets": [
       {
         "host": "igw1",
-        "target": "iqn.2003-01.org.linux-iscsi.generic.x86:sn.abcdefghijk"
+        "target": "iqn.2003-01.org.linux-iscsi:generic.x86:sn.abcdefghijk"
       }
     ],
     "auth": [

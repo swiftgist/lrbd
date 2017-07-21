@@ -2,11 +2,11 @@
     "_target": [
       {
         "host": "igw1",
-        "iqn": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.1a2b6ae09141"
+        "iqn": "iqn.2003-01.org.linux-iscsi:igw1.x86:sn.1a2b6ae09141"
       },
       {
         "host": "igw2",
-        "iqn": "iqn.2003-01.org.linux-iscsi.igw2.x86:sn.b611a553e579"
+        "iqn": "iqn.2003-01.org.linux-iscsi:igw2.x86:sn.b611a553e579"
       }
     ],
     "_auth": [

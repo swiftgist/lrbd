@@ -1,7 +1,7 @@
 {
   "auth": [
         {
-          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant",
           "authentication": "acls", 
           "acls": [ 
             {
@@ -12,7 +12,7 @@
           ]
         },
         {
-          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant-too",
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant-too",
           "authentication": "acls", 
           "acls": [ 
             {
@@ -37,18 +37,18 @@
             { "host": "igw1", "portal": "portal1" },
             { "host": "igw2", "portal": "portal2" }
         ],
-        "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+        "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant"
       },
       {
         "hosts": [
             { "host": "igw1", "portal": "portal3" },
             { "host": "igw2", "portal": "portal4" }
         ],
-        "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant-too"
+        "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant-too"
       },
       {
         "host": "igw1",
-        "target": "iqn.2003-01.org.linux-iscsi.generic.x86:sn.abcdefghijk"
+        "target": "iqn.2003-01.org.linux-iscsi:generic.x86:sn.abcdefghijk"
       }
   ], 
   "portals": [
@@ -83,7 +83,7 @@
           ]
         }, 
         {
-          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant",
           "tpg": [
             {
               "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
@@ -92,7 +92,7 @@
           ] 
         }, 
         {
-          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant-too",
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant-too",
           "tpg": [
             {
               "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f24",

@@ -2,7 +2,7 @@
   "auth": [
     {
       "authentication": "none", 
-      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant"
     },
     {
       "authentication": "none", 
@@ -16,11 +16,11 @@
   "targets": [
     {
       "host": "igw1",
-      "target": "iqn.2003-01.org.linux-iscsi.generic.x86:sn.abcdefghijk"
+      "target": "iqn.2003-01.org.linux-iscsi:generic.x86:sn.abcdefghijk"
     },
     {
       "host": "igw2",
-      "target": "iqn.2003-01.org.linux-iscsi.generic.x86:sn.lmnopqrstuv"
+      "target": "iqn.2003-01.org.linux-iscsi:generic.x86:sn.lmnopqrstuv"
     },
     {
       "hosts": [
@@ -31,7 +31,7 @@
           { "host": "igw3", "portal": "portal5" },
           { "host": "igw3", "portal": "portal6" }
       ],
-      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant"
     }
   ], 
   "portals": [
@@ -87,7 +87,7 @@
           ]
         },
         {
-          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant",
           "tpg": [
             {
               "image": "city"
