@@ -2,7 +2,7 @@
   "auth": [
     {
       "authentication": "none", 
-      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant"
     }
   ], 
   "targets": [
@@ -13,7 +13,7 @@
           { "host": "igw2", "portal": "portal3" },
           { "host": "igw2", "portal": "portal4" }
       ],
-      "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant"
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant"
     }
   ], 
   "portals": [
@@ -39,7 +39,7 @@
       "pool": "rbd",
       "gateways": [
         {
-          "target": "iqn.2003-01.org.linux-iscsi.igw.x86:sn.redundant",
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant",
           "tpg": [
             {
               "image": "city"

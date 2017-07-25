@@ -2,11 +2,11 @@
     "targets": [
       {
         "host": "igw1",
-        "target": "iqn.2003-01.org.linux-iscsi.igw1.x86:sn.1a2b6ae09141"
+        "target": "iqn.2003-01.org.linux-iscsi:igw1.x86:sn.1a2b6ae09141"
       },
       {
         "host": "igw2",
-        "target": "iqn.2003-01.org.linux-iscsi.igw2.x86:sn.b611a553e579"
+        "target": "iqn.2003-01.org.linux-iscsi:igw2.x86:sn.b611a553e579"
       }
     ],
     "portals": [
