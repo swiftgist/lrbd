@@ -17,7 +17,7 @@
 
 Summary: lrbd
 Name: lrbd
-Version: 1.3
+Version: 1.4
 Release: 0
 License: LGPL-2.1+ 
 Group: System Environment/Base
