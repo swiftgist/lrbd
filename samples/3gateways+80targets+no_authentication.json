@@ -1,0 +1,1788 @@
+{
+  "auth": [
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.1"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.2"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.3"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.4"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.5"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.6"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.7"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.8"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.9"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.10"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.11"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.12"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.13"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.14"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.15"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.16"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.17"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.18"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.19"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.20"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.21"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.22"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.23"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.24"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.25"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.26"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.27"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.28"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.29"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.30"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.31"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.32"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.33"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.34"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.35"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.36"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.37"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.38"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.39"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.40"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.41"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.42"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.43"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.44"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.45"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.46"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.47"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.48"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.49"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.50"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.51"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.52"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.53"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.54"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.55"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.56"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.57"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.58"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.59"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.60"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.61"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.62"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.63"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.64"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.65"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.66"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.67"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.68"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.69"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.70"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.71"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.72"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.73"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.74"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.75"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.76"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.77"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.78"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.79"
+    },
+    {
+      "authentication": "none",
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.80"
+    }
+  ], 
+  "targets": [
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.1",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.2",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.3",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.4",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.5",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.6",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.7",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.8",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.9",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.10",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.11",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.12",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.13",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.14",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.15",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.16",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.17",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.18",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.19",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.20",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.21",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.22",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.23",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.24",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.25",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.26",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.27",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.28",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.29",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.30",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.31",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.32",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.33",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.34",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.35",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.36",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.37",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.38",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.39",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.40",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.41",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.42",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.43",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.44",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.45",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.46",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.47",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.48",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.49",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.50",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.51",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.52",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.53",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.54",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.55",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.56",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.57",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.58",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.59",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.60",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.61",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.62",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.63",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.64",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.65",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.66",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.67",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.68",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.69",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.70",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.71",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.72",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.73",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.74",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.75",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.76",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.77",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.78",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.79",
+      "wwn_generate": "original"
+    },
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" },
+          { "host": "igw3", "portal": "portal3" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.80",
+      "wwn_generate": "original"
+    }
+  ], 
+  "portals": [
+      {
+          "name": "portal1",
+          "addresses": [ "172.16.11.16"]
+      },
+      {
+          "name": "portal2",
+          "addresses": [ "172.16.11.17" ]
+      },
+      {
+          "name": "portal3",
+          "addresses": [ "172.16.11.18" ]
+      }
+
+  ],
+  "pools": [
+    {
+      "pool": "rbd",
+      "gateways": [
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.1",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.2",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.3",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.4",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.5",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.6",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.7",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.8",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.9",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.10",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.11",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.12",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.13",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.14",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.15",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.16",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.17",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.18",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.19",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.20",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.21",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.22",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.23",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.24",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.25",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.26",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.27",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.28",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.29",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.30",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.31",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.32",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.33",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.34",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.35",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.36",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.37",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.38",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.39",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.40",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.41",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.42",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.43",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.44",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.45",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.46",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.47",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.48",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.49",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.50",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.51",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.52",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.53",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.54",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.55",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.56",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.57",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.58",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.59",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.60",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.61",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.62",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.63",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.64",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.65",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.66",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.67",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.68",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.69",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.70",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.71",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.72",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.73",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.74",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.75",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.76",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.77",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.78",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.79",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        },
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.80",
+          "tpg": [
+            {
+              "image": "city",
+              "rbd_name": "simple"
+            }
+          ]
+        }
+      ] 
+    } 
+  ]
+}

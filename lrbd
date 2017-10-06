@@ -1010,7 +1010,13 @@ class Configs(object):
             attr - key desired (e.g. 'targets' or 'portals')
         """
         try:
-            return json.loads(ioctx.get_xattr(config_name, attr), object_pairs_hook=OrderedDict)
+            # Seems to cause an issue for some with several dozen targets, 
+            # use a for loop to return the same value
+            # return json.loads(ioctx.get_xattr(config_name, attr), object_pairs_hook=OrderedDict)
+            for k,v in ioctx.get_xattrs(config_name):
+                logging.debug("_get_optional: key {} value {}".format(k, v))
+                if k == attr:
+                    return json.loads(v, object_pairs_hook=OrderedDict)
         except rados.NoData, error:
             pass
 

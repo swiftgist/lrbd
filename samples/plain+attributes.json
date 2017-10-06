@@ -49,7 +49,6 @@
                             "backstore_emulate_ua_intlck_ctrl": "0",
                             "backstore_emulate_write_cache": "0",
                             "backstore_enforce_pr_isids": "1",
-                            "backstore_fabric_max_sectors": "8192",
                             "backstore_hw_block_size": "512",
                             "backstore_hw_max_sectors": "8192",
                             "backstore_hw_pi_prot_type": "0",
