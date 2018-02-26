@@ -2736,9 +2736,9 @@ def main(args):
         images.unmap()
     elif args.file:
         conn = Cluster()
-        configs.wipe(conn)
         content = Content()
         content.read(args.file)
+        configs.wipe(conn)
         content.save(conn)
     elif args.add:
         content = Content()
