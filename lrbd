@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Copyright (C) 2015 Eric Jackson <ejackson@suse.com>
 
 # This program is free software; you can redistribute it and/or
@@ -16,6 +16,7 @@
 # <http://www.gnu.org/licenses/>.
 
 
+from __future__ import print_function
 import glob, uuid
 import argparse
 import rados, json
@@ -32,6 +33,7 @@ from collections import OrderedDict
 import logging
 import pprint
 import time
+import shlex
 
 
 def popen(cmd):
@@ -41,17 +43,17 @@ def popen(cmd):
 
         cmd - an array of strings of the command
     """
-    print " ".join(cmd)
+    print(" ".join(cmd))
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     for line in proc.stdout:
-        print line.rstrip('\n')
+        print(line.rstrip('\n'))
     for line in proc.stderr:
-        print line.rstrip('\n')
+        print(line.rstrip('\n'))
     proc.wait()
     if (proc.returncode != 0):
         raise RuntimeError("command failed", proc.returncode)
     if (logging.getLogger().level <= logging.INFO):
-        print ""
+        print 
 
 def retry(cmd, **kwargs):
     """
@@ -75,7 +77,7 @@ def retry(cmd, **kwargs):
         except RuntimeError as e:
             if ( e[1] in retry_errors and attempt < retries):
                 wait_time = sleep * attempt 
-                print "Waiting {} seconds to try again".format(wait_time)
+                print("Waiting {} seconds to try again".format(wait_time))
                 time.sleep(wait_time)
                 continue
             else:
@@ -409,7 +411,7 @@ class Content(object):
         """
         try:
             json.loads(text)
-        except ValueError, error:
+        except ValueError as error:
             logging.error(error)
             return False
         return True
@@ -686,8 +688,8 @@ class Attributes(object):
         """
         conn = Ioctx(self.cluster, pool)
         with conn as ioctx:
-            ioctx.write_full(Common.config_name, "")
-            ioctx.set_xattr(Common.config_name, key, attrs)
+            ioctx.write_full(Common.config_name, bytes("", 'utf-8'))
+            ioctx.set_xattr(Common.config_name, key, bytes(attrs, 'utf-8'))
             logging.debug("Writing {} to pool {}".format(key, pool))
 
     def remove(self, pool, attr):
@@ -995,7 +997,7 @@ class Configs(object):
         """
         try:
             ioctx.stat(config_name) # Check for object
-        except rados.ObjectNotFound, error:
+        except rados.ObjectNotFound as error:
             # No configuration for pool, skipping
             logging.info("No configuration object {} in pool {}".format(self.config_name, pool))
             return True
@@ -1017,7 +1019,7 @@ class Configs(object):
                 logging.debug("_get_optional: key {} value {}".format(k, v))
                 if k == attr:
                     return json.loads(v, object_pairs_hook=OrderedDict)
-        except rados.NoData, error:
+        except rados.NoData as error:
             pass
 
     def display(self):
@@ -1026,7 +1028,7 @@ class Configs(object):
         format obnoxious when reviewing.  TODO: custom JSON output with
         keys sorted by significance.
         """
-        print json.dumps(Common.config, indent=4)
+        print(json.dumps(Common.config, indent=4))
 
     def wipe(self, conn):
         """
@@ -1043,7 +1045,7 @@ class Configs(object):
                         ioctx.remove_object(self.config_name)
                         logging.debug("Removing {} from pool {}".
                                       format(self.config_name, pool))
-                    except rados.ObjectNotFound, error:
+                    except rados.ObjectNotFound as error:
                         logging.info("No object {} to remove from pool {}".
                                       format(self.config_name, pool))
 
@@ -2695,8 +2697,8 @@ def sysconfig_options(filename="/etc/sysconfig/lrbd"):
         with open(filename) as options:
             for line in options:
                 if 'LRBD_OPTIONS' in line:
-                    parts = filter(None, re.split(r'[\'="]', line))
-                    return parts[1].split()
+                    options = re.split(r'[\'="]', line)
+                    return options[2].split()
     return []
 
 
@@ -2856,9 +2858,9 @@ if __name__ == "__main__":
         try:
             main(args)
         except SystemExit as error:
-            print error
+            print(error)
             exit()
         except Exception as e:
-            logging.error(e[0])
+            logging.error(e)
             exit(1)
 
