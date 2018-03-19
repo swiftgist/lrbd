@@ -1,0 +1,250 @@
+-------------------------------------------------------------------
+Mon Mar 19 12:16:08 UTC 2018 - ejackson@suse.com
+
+- Version 2.0
+- Convert to python3
+
+-------------------------------------------------------------------
+Mon Feb 26 19:53:42 UTC 2018 - ejackson@suse.com
+
+- Version 1.6 752400e4909eeebc0c33b4408e463c8b63c743b9
+- Move wipe to after read for -f (bnc#1082865)
+
+-------------------------------------------------------------------
+Fri Oct  6 13:31:21 UTC 2017 - ejackson@suse.com
+
+- Version 1.5 63b70404a0450981868be8837131b105960488b2
+- Replace get_xattr call with get_xattrs loop
+- Obsolete backstore_fabric_max_sectors
+- Add 80 target sample 
+
+-------------------------------------------------------------------
+Thu Jul 27 12:23:28 UTC 2017 - ejackson@suse.com
+
+- Version 1.4 f43e24a6da9313469158405f97bc729279d2d8f5
+- Fix sample configurations (bnc#1049713) 
+
+-------------------------------------------------------------------
+Wed May 24 20:42:01 UTC 2017 - ejackson@suse.com
+
+- Version 1.3 05617a148cfebb25d0fd9676fde30b0ed0fe6429
+- Supports short and fqdn hostnames for identifers
+- Includes options in /etc/sysconfig/lrbd automatically 
+
+-------------------------------------------------------------------
+Tue Sep  6 17:27:53 UTC 2016 - ejackson@suse.com
+
+- Version 1.2 git 98e33ea16bcf3320fe7ae49cda60b12c2aa6fe1f
+- Disable tpg until configured (bnc#991482) 
+- Add LICENSE to spec (bnc#997326)
+
+-------------------------------------------------------------------
+Fri Aug 12 10:49:32 UTC 2016 - ejackson@suse.com
+
+- Verion 1.1 git cb2975c11e71cdffe9bc32d3366fcfd16ad6996d
+- Always unmap with -Cu (bnc#982788)
+- Previous version does not have new features (bnc#987999)
+- Newer version unavailable (bnc#987997)
+- Add -n/-p options 
+
+-------------------------------------------------------------------
+Mon Mar 21 20:48:51 UTC 2016 - ejackson@suse.com
+
+- Add retry for rbd, allow custom values (bnc#971230) 
+
+-------------------------------------------------------------------
+Wed Mar  9 18:55:13 UTC 2016 - ejackson@suse.com
+
+- Disable service restart on future updates (bnc#970026) 
+
+-------------------------------------------------------------------
+Thu Feb 25 09:37:29 UTC 2016 - ejackson@suse.com
+
+- Version 1.0.4 git 156b04823c402a0fffe63904263b1627cc6096d1
+- Allocate LUNs in the correct order (#964941) 
+
+-------------------------------------------------------------------
+Mon Feb  1 14:29:52 UTC 2016 - ejackson@suse.com
+
+- Version 1.0.3 git cfd7323dcddd8d86c5ec8f9d46d84eb14ac8b089
+- Exlude cache tier pools (bnc#964351)
+
+-------------------------------------------------------------------
+Fri Sep 25 14:57:51 UTC 2015 - ddiss@suse.com
+
+- Use new "targetcli-rbd" dependency, which is provided by targetcli
+  packages with Ceph RBD module support; (bnc#947555).
+
+-------------------------------------------------------------------
+Thu Sep 24 09:13:09 UTC 2015 - ddiss@suse.com
+
+- Changed Requires to correct version.
+
+-------------------------------------------------------------------
+Wed Sep 23 15:41:09 UTC 2015 - ejackson@suse.com
+
+- Version 1.0.2 git cc757bc3ee1df981fa7eac5ac16ebae6c29b1a42
+- Add tpg+identified authentication
+- Fixed removal of deleted auth entries
+- Comment out module loading
+- Add/Update samples
+- Update man page
+- Add unit tests
+
+-------------------------------------------------------------------
+Fri Sep 18 17:26:50 UTC 2015 - ejackson@suse.com
+
+- Address correction for 3gateway sample 
+
+-------------------------------------------------------------------
+Thu Sep 17 13:54:15 UTC 2015 - ejackson@suse.com
+
+- Version 1.0.1 git 0e7aee73029751f70c0f8b45acdbccf35ebdb357
+- clarified README 
+- Add warning (bnc#945675)
+- Raise validation error (bnc#945750)
+- Fixed samples
+- Added image key for specific configurations
+- Updated unit_tests
+
+-------------------------------------------------------------------
+Wed Sep  9 18:56:04 UTC 2015 - ejackson@suse.com
+
+- Minor man page correction 
+
+-------------------------------------------------------------------
+Wed Sep  9 18:39:55 UTC 2015 - ejackson@suse.com
+
+- Update man pages, README 
+
+-------------------------------------------------------------------
+Wed Sep  9 14:56:41 UTC 2015 - ejackson@suse.com
+
+- Version 1.0.0 git 19da0cf9a659c93740af09aaa2a8d212873ef9c5 
+
+-------------------------------------------------------------------
+Wed Sep  9 02:32:31 UTC 2015 - ejackson@suse.com
+
+- Missed sample file rename 
+
+-------------------------------------------------------------------
+Wed Sep  9 01:53:10 UTC 2015 - ejackson@suse.com
+
+- Add vendor string (bnc#942155)
+- Updated dependencies
+- Fix lun/map for entries with missing portals
+- Fix target lookup in Luns
+- Only create luns/maps for acl authentication
+- Added generate_node_acls to no authentication
+
+-------------------------------------------------------------------
+Thu Aug 27 12:26:47 UTC 2015 - ddiss@suse.com
+
+- Change targetcli version requirement to match latest; (bnc#943438).
+- Remove explicit python-rtslib requirement. It's handled implicilty
+  via targetcli.
+
+-------------------------------------------------------------------
+Thu Aug 27 04:48:17 UTC 2015 - ejackson@suse.com
+
+- Version 0.9.10
+- Fixed authentication for TPGs > 1
+
+-------------------------------------------------------------------
+Wed Aug 26 14:20:24 UTC 2015 - ejackson@suse.com
+
+- Updating changlog bug format
+
+-------------------------------------------------------------------
+Tue Aug 25 19:01:24 UTC 2015 - ejackson@suse.com
+
+- Version 0.9.9
+- Make rbd backstore default
+- Add option for iblock backstore
+- Update unit tests, README and man pages
+- Remove *.pyc files
+
+-------------------------------------------------------------------
+Mon Aug 24 15:59:11 UTC 2015 - ejackson@suse.com
+
+- Include latest man pages - 0.9.8 
+
+-------------------------------------------------------------------
+Mon Aug 24 14:17:36 UTC 2015 - ejackson@suse.com
+
+- Generate identical serial numbers (bnc#942273)
+- added additional samples
+- updated unit tests
+- Updated man pages
+
+-------------------------------------------------------------------
+Thu Aug 20 22:05:37 UTC 2015 - ejackson@suse.com
+
+- Cleanup: Name, exception consistency
+- Add support for rbd backstore
+- Generate wwn for target on multiple gateways
+- Fixed Auth logic
+- Fixed acls+mutual sample, added plain
+- Add reload to lrbd.service
+- Add unit tests
+
+-------------------------------------------------------------------
+Thu Aug 13 15:04:12 UTC 2015 - ejackson@suse.com
+
+- add missing email to changelog 
+
+-------------------------------------------------------------------
+Thu Aug 13 14:36:12 UTC 2015 - ejackson@suse.com
+
+- fixing changelog 
+
+-------------------------------------------------------------------
+Wed Aug 12 14:57:25 EST 2015 - ejackson@suse.com 
+
+- Support kernel attribute change, add samples to spec - 0.9.6
+
+-------------------------------------------------------------------
+Tue Aug 11 19:48:51 EST 2015 - ejackson@suse.com 
+
+- Refactoring, add invalid configurations - 0.9.5
+
+-------------------------------------------------------------------
+Fri Aug  7 19:58:32 EST 2015 - ejackson@suse.com
+
+- Option changes, address exception, portal/initiator checks, docs - 0.9.4  
+
+-------------------------------------------------------------------
+Thu Aug  6 09:09:15 EST 2015 - ejackson@suse.com  
+
+- Update spec to install man page - 0.9.3 
+
+-------------------------------------------------------------------
+Wed Aug  5 22:55:41 EST 2015 - ejackson@suse.com
+
+- Add man page, allow optional sections, add requires - 0.9.3 
+
+-------------------------------------------------------------------
+Tue Aug  4 21:52:28 EST 2015 - ejackson@suse.com  
+
+- Renamed keywords, consolidated code, add samples - 0.9.2  
+
+-------------------------------------------------------------------
+Tue Aug  4 00:12:03 EST 2015 - ejackson@suse.com
+
+- Fixed swapped parameters
+
+-------------------------------------------------------------------
+Mon Aug  3 21:09:23 EST 2015 - ejackson@suse.com
+
+- Replacing wrong archive
+
+-------------------------------------------------------------------
+Mon Aug  3 20:56:27 EST 2015 - ejackson@suse.com
+
+- Fixed spec file, add multiple tpg support, moved portals to toplevel - 0.9.1  
+
+-------------------------------------------------------------------
+Tue Jul 28 18:34:13 UTC 2015 - ejackson@suse.com
+
+- Initial release 
+
