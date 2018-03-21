@@ -14,6 +14,10 @@
 
 # Please submit bugfixes or comments via http://bugs.opensuse.org/
 
+# Compat macro for new _fillupdir macro
+%if ! %{defined _fillupdir}
+  %define _fillupdir /var/adm/fillup-templates
+%endif
 
 Summary: lrbd
 Name: lrbd
@@ -47,7 +51,7 @@ Ceph for configuring iSCSI access on a host.
 
 %install
 %define _samples %{buildroot}%{_docdir}/%{name}/samples
-mkdir -p %{buildroot}/var/adm/fillup-templates
+mkdir -p %{buildroot}%{_fillupdir}
 mkdir -p %{buildroot}%{_unitdir}
 mkdir -p %{buildroot}%{_docdir}/%{name}/samples
 mkdir -p %{buildroot}%{_mandir}/man5
@@ -59,7 +63,7 @@ install -m 555 lrbd %{buildroot}%{_sbindir}
 install -m 644 man/lrbd.conf.5.gz %{buildroot}%{_mandir}/man5
 install -m 644 man/lrbd.8.gz %{buildroot}%{_mandir}/man8
 
-install -m 644 sysconfig/lrbd %{buildroot}/var/adm/fillup-templates/sysconfig.lrbd
+install -m 644 sysconfig/%{name} %{buildroot}%{_fillupdir}/sysconfig.%{name}
 install -m 644 systemd/lrbd.service %{buildroot}%{_unitdir}
 ln -sf %{_sbindir}/service %{buildroot}%_sbindir/rclrbd
 install -m 644 README.migration %{buildroot}%{_docdir}/%{name}
@@ -144,7 +148,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files 
 %defattr(-,root,root)
-/var/adm/fillup-templates/sysconfig.lrbd
+%{_fillupdir}/sysconfig.%{name}
 %{_sbindir}/lrbd
 %{_sbindir}/rclrbd
 %{_mandir}/man5/lrbd.conf.5.gz
