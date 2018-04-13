@@ -46,14 +46,14 @@ def popen(cmd):
     print(" ".join(cmd))
     proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     for line in proc.stdout:
-        print(line.rstrip('\n'))
+        print(line.decode('utf-8').rstrip('\n'))
     for line in proc.stderr:
-        print(line.rstrip('\n'))
+        print(line.decode('utf-8').rstrip('\n'))
     proc.wait()
     if (proc.returncode != 0):
         raise RuntimeError("command failed", proc.returncode)
     if (logging.getLogger().level <= logging.INFO):
-        print 
+        print
 
 def retry(cmd, **kwargs):
     """
@@ -357,7 +357,7 @@ class Content(object):
                                                        '/usr/bin/vim')
         self.initial_content = InitialContents()
 
-        with tempfile.NamedTemporaryFile(suffix=".tmp") as tmpfile:
+        with tempfile.NamedTemporaryFile(suffix=".tmp", mode='w') as tmpfile:
             tmpfile.write(self.initial_content.text)
             tmpfile.flush()
 
@@ -1164,7 +1164,7 @@ class Images(object):
         self.mounts = {}
         proc = Popen(["rbd", "showmapped"], stdout=PIPE, stderr=PIPE)
         for line in proc.stdout:
-            results = re.split(r'\s+', line)
+            results = re.split(r'\s+', line.decode('utf-8'))
             if results[0] == 'id':
                 continue
             self.mounts[":".join([results[1], results[2]])] = results[4]
@@ -2066,7 +2066,7 @@ class Luns(object):
         proc = Popen(["targetcli", "get", "global", "auto_add_mapped_luns"],
                      stdout=PIPE, stderr=PIPE)
         for line in proc.stdout:
-            results = re.split(r'=', line)
+            results = re.split(r'=', line.decode('utf-8'))
             if results[1].rstrip() != 'false':
                 cmd = ["targetcli", "set", "global", "auto_add_mapped_luns=false"]
                 popen(cmd)
