@@ -1053,14 +1053,10 @@ class Configs(object):
         """
         Reset any targetcli configuration.
 
-        Note: the clearconfig option is missing from the current targetcli
-        which would remove the additional dependencies
+        Note: the clearconfig option is missing from old (non-fb) targetcli
+        versions.
         """
-        cmds = [["/usr/sbin/tcm_fabric", "--unloadall"],
-                ["/usr/sbin/lio_node", "--unload"],
-                ["/usr/sbin/tcm_node", "--unload"]]
-        for cmd in cmds:
-            popen(cmd)
+        popen(["targetcli", "clearconfig", "confirm=true"])
 
     def migrate(self, version):
         """
