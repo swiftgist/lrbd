@@ -33,10 +33,13 @@ class TPGsTestCase(unittest.TestCase):
             def _add_target(self):
                 pass
 
+            def disable_auto_add_default_portal(self):
+                pass
+
         class Portal_Index(object):
             def portals(self):
                 pass
-        
+
         _pi = Portal_Index()
         self.t = mock_TPGs(None, _pi, None)
         assert ('addresses' in Runtime.config and
@@ -51,10 +54,14 @@ class TPGsTestCase(unittest.TestCase):
             def _check_portal(self):
                 pass
 
+            def disable_auto_add_default_portal(self):
+                pass
+
+
         class Portal_Index(object):
             def portals(self):
                 pass
-        
+
         _pi = Portal_Index()
         self.t = mock_TPGs(None, _pi, None)
         assert not self.t.cmds
@@ -77,7 +84,11 @@ class TPGsTestCase(unittest.TestCase):
 
             def _check_portal(self, name):
                 pass
+
             def _add_host(self, entry, target):
+                pass
+
+            def disable_auto_add_default_portal(self):
                 pass
 
         class Portal_Index(object):
@@ -109,6 +120,9 @@ class TPGsTestCase(unittest.TestCase):
             def _remote(self):
                 pass
 
+            def disable_auto_add_default_portal(self):
+                pass
+
         class Portal_Index(object):
             def portals(self):
                 pass
@@ -126,6 +140,9 @@ class TPGsTestCase(unittest.TestCase):
                 pass
 
             def _remote(self):
+                pass
+
+            def disable_auto_add_default_portal(self):
                 pass
 
         class Portal_Index(object):
@@ -169,6 +186,9 @@ class TPGsTestCase(unittest.TestCase):
             def _remote(self):
                 pass
 
+            def disable_auto_add_default_portal(self):
+                pass
+
         class Portal_Index(object):
             def portals(self):
                 pass
@@ -189,6 +209,9 @@ class TPGsTestCase(unittest.TestCase):
             def _remote(self):
                 pass
 
+            def disable_auto_add_default_portal(self):
+                pass
+
         class Portal_Index(object):
             def portals(self):
                 pass
@@ -207,6 +230,9 @@ class TPGsTestCase(unittest.TestCase):
                 pass
 
             def _remote(self):
+                pass
+
+            def disable_auto_add_default_portal(self):
                 pass
 
         class Portal_Index(object):
