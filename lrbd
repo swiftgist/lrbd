@@ -1254,8 +1254,7 @@ class Backstores(object):
         """
         Same kernel modules as targetcli + target_core_rbd
         """
-        modules = ["vhost_scsi", "iscsi_target_mod", "tcm_loop", "tcm_fc",
-                   "ib_srpt", "tcm_qla2xxx", "target_core_rbd"]
+        modules = ["iscsi_target_mod", "target_core_rbd"]
         for module in modules:
             if not os.path.isdir("/sys/module/{}".format(module)):
                 popen(["modprobe", module])
