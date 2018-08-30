@@ -981,9 +981,9 @@ class Configs(object):
                             continue
                         elif key[0] == "_":
                             sections["authentications"].add(
-                                json.loads(value, object_pairs_hook=OrderedDict))
+                                json.loads(value.decode("utf-8"), object_pairs_hook=OrderedDict))
                         else:
-                            gateways.add(key, value, self.hostname)
+                            gateways.add(key, value.decode("utf-8"), self.hostname)
         gateways.purge()
         Common.assign(sections)
 
@@ -1018,7 +1018,7 @@ class Configs(object):
             for k,v in ioctx.get_xattrs(config_name):
                 logging.debug("_get_optional: key {} value {}".format(k, v))
                 if k == attr:
-                    return json.loads(v, object_pairs_hook=OrderedDict)
+                    return json.loads(v.decode("utf-8"), object_pairs_hook=OrderedDict)
         except rados.NoData as error:
             pass
 
