@@ -12,6 +12,8 @@ class IscsiTestCase(unittest.TestCase):
                 pass
             def _assign_vendor(self):
                 pass
+            def disable_auto_add_default_portal(self):
+                pass
         self.i = mock_Iscsi()
         print self.i.cmds
         assert self.i.cmds == [['targetcli', '/iscsi', 'create' ]]
@@ -23,6 +25,8 @@ class IscsiTestCase(unittest.TestCase):
             def _gen_wwn(self):
                 pass
             def _assign_vendor(self):
+                pass
+            def disable_auto_add_default_portal(self):
                 pass
 
         self.i = mock_Iscsi()
@@ -39,6 +43,8 @@ class IscsiTestCase(unittest.TestCase):
                 pass
             def _assign_vendor(self):
                 pass
+            def disable_auto_add_default_portal(self):
+                pass
         self.i = mock_Iscsi()
         self.i.create()
         assert (mock_subproc_popen.called and 
@@ -52,6 +58,8 @@ class IscsiTestCase(unittest.TestCase):
             def _gen_wwn(self):
                 pass
             def _assign_vendor(self):
+                pass
+            def disable_auto_add_default_portal(self):
                 pass
         self.i = mock_Iscsi()
         self.i.create()
@@ -80,6 +88,8 @@ class IscsiTestCase(unittest.TestCase):
 
             class mock_Iscsi(Iscsi):
                 def _arrange(self):
+                    pass
+                def disable_auto_add_default_portal(self):
                     pass
 
 
