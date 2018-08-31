@@ -981,9 +981,9 @@ class Configs(object):
                             continue
                         elif key[0] == "_":
                             sections["authentications"].add(
-                                json.loads(value, object_pairs_hook=OrderedDict))
+                                json.loads(value.decode("utf-8"), object_pairs_hook=OrderedDict))
                         else:
-                            gateways.add(key, value, self.hostname)
+                            gateways.add(key, value.decode("utf-8"), self.hostname)
         gateways.purge()
         Common.assign(sections)
 
@@ -1018,7 +1018,7 @@ class Configs(object):
             for k,v in ioctx.get_xattrs(config_name):
                 logging.debug("_get_optional: key {} value {}".format(k, v))
                 if k == attr:
-                    return json.loads(v, object_pairs_hook=OrderedDict)
+                    return json.loads(v.decode("utf-8"), object_pairs_hook=OrderedDict)
         except rados.NoData as error:
             pass
 
@@ -1254,8 +1254,7 @@ class Backstores(object):
         """
         Same kernel modules as targetcli + target_core_rbd
         """
-        modules = ["vhost_scsi", "iscsi_target_mod", "tcm_loop", "tcm_fc",
-                   "ib_srpt", "tcm_qla2xxx", "target_core_rbd"]
+        modules = ["iscsi_target_mod", "target_core_rbd"]
         for module in modules:
             if not os.path.isdir("/sys/module/{}".format(module)):
                 popen(["modprobe", module])
@@ -1336,7 +1335,7 @@ class BackstoreAttributes(object):
                     except IOError:
                         # Already in use
                         pass
-              
+
 
 class Iscsi(object):
     """
@@ -1352,6 +1351,7 @@ class Iscsi(object):
         self.cmds = []
         self.iqns = []
 
+        self.disable_auto_add_default_portal()
         self._arrange()
         wwn = WWN()
         wwn.generate(self.iqns)
@@ -1370,6 +1370,18 @@ class Iscsi(object):
             cmd = base
             self.cmds.append(cmd)
             logging.warning("No matching host found, generating dynamic target\n")
+
+    def disable_auto_add_default_portal(self):
+        """
+        Disable auto portal of 0.0.0.0
+        """
+        proc = Popen(["targetcli", "get", "global", "auto_add_default_portal"],
+                     stdout=PIPE, stderr=PIPE)
+        for line in proc.stdout:
+            results = re.split(r'=', line.decode('utf-8'))
+            if results[1].rstrip() != 'false':
+                cmd = ["targetcli", "set", "global", "auto_add_default_portal=false"]
+                popen(cmd)
 
     def _arrange(self):
         """
@@ -1509,21 +1521,8 @@ class TPGs(object):
         self.portal_index = portal_index
         self.lun_assignment = lun_assignment
 
-        self.disable_auto_add_default_portal()
         self._add()
         Runtime.config['portals'] = self.portal_index.portals
-
-    def disable_auto_add_default_portal(self):
-        """
-        Disable auto portal of 0.0.0.0
-        """
-        proc = Popen(["targetcli", "get", "global", "auto_add_default_portal"],
-                     stdout=PIPE, stderr=PIPE)
-        for line in proc.stdout:
-            results = re.split(r'=', line.decode('utf-8'))
-            if results[1].rstrip() != 'false':
-                cmd = ["targetcli", "set", "global", "auto_add_default_portal=false"]
-                popen(cmd)
 
     def _add(self):
         """
