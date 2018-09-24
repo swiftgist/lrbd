@@ -1267,7 +1267,7 @@ class Backstores(object):
         Execute saved commands
         """
         for cmd in uniq(self.cmds):
-            popen(cmd)
+            retry(cmd)
         self._enable_rbd()
 
     def _enable_rbd(self):
