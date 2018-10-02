@@ -1193,6 +1193,19 @@ class Images(object):
             retry(cmd, **custom)
     
 
+    def check(self):
+        """
+        Wait for the rbd device to exist.  After 10 seconds, fail normally
+        """
+        for pentry, gentry, entry in entries():
+            device = "/dev/rbd/{}/{}".format(pentry['pool'], entry['image'])
+            for attempt in range(1, 101):
+                if os.path.exists(device):
+                    break
+                sleep(0.1)
+                logging.warning("Waiting for device {}".format(device))
+
+
     def unmap(self):
         """
         Unmount all rbd images
@@ -2772,6 +2785,7 @@ def main(args):
             configs.retrieve(Cluster(), sections, gateways)
             images = Images()
             images.map()
+            images.check()
             backstores = Backstores(args.backstore)
             backstores.create()
             backstore_attrs = BackstoreAttributes()
