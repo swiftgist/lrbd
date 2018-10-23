@@ -1192,7 +1192,6 @@ class Images(object):
             custom = self.map_cmds[key]['custom']
             retry(cmd, **custom)
     
-
     def unmap(self):
         """
         Unmount all rbd images
@@ -2103,7 +2102,8 @@ class Map(object):
         Checks appropriate authentication types
         """
         return(find_auth(target_auth) == "acls" or
-               find_auth(target_auth) == "tpg+identified")
+               find_auth(target_auth) == "tpg+identified" or
+               find_auth(target_auth) == "identified")
 
 
     def _check_initiator(self, entry, target, target_auth):
@@ -2215,7 +2215,8 @@ class Acls(object):
         """
         """
         return(find_auth(target_auth) == "acls" or
-               find_auth(target_auth) == "tpg+identified")
+               find_auth(target_auth) == "tpg+identified" or
+               find_auth(target_auth) == "identified")
 
     def _check_initiator(self, entry, target, target_auth):
         """
@@ -2321,11 +2322,27 @@ class Auth(object):
         elif self.auth['authentication'] == "tpg+identified":
             self._generate_acls()
             self.cmds.extend(self.select_acls())
+        elif self.auth['authentication'] == "identified":
+            self._generate_initiators()
+            self.cmds.append(self.set_initiator_mode())
         elif self.auth['authentication'] == "acls":
             self.cmds.extend(self.select_acls())
         else:
             raise ValueError("InvalidAuthentication: authentication must " +
                              "be one of tpg, tpg+identified, acls or none")
+
+    def _generate_initiators(self):
+        """
+        Create or append to the acls array the common tpg entry for each
+        initiator.  This is technically the same as specifying acls with
+        the same userid/password/etc.
+        """
+        for initiator in self._find_tpg_identified_initiators():
+            if not 'acls' in self.auth:
+                self.auth['acls'] = []
+            entry = {}
+            entry['initiator'] = initiator
+            self.auth['acls'].append(entry)
 
     def _generate_acls(self):
         """
@@ -2651,6 +2668,24 @@ class Auth(object):
                "userid_mutual={}".format(self.acl['userid_mutual']),
                "password_mutual={}".format(self.acl['password_mutual'])]
         return cmd
+
+    def set_initiator_mode(self):
+        """
+        Disable authentication, disable acls generation.  Checks current settings.
+        """
+        path = Runtime.path("{}/tpgt_{}/attrib".format(self.target, self.tpg))[0]
+        authentication = open(path + "/authentication").read().rstrip('\n')
+        demo_mode_write_protect = open(path + "/demo_mode_write_protect").read().rstrip('\n')
+        generate_node_acls = open(path + "/generate_node_acls").read().rstrip('\n')
+
+        if (authentication == "0" and
+                demo_mode_write_protect == "0" and
+                generate_node_acls == "0"):
+            return []
+        return ["targetcli",
+                "/{}/{}/tpg{}".format(Runtime.fabric, self.target, self.tpg),
+                "set", "attribute", "authentication=0",
+                "demo_mode_write_protect=0", "generate_node_acls=0"]
 
     def set_acls_mode(self):
         """
