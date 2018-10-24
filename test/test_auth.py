@@ -66,6 +66,23 @@ class AuthTestCase(unittest.TestCase):
         self.a = mock_Auth()
         assert self.a.cmds == ['tpg+identified', 'select_discovery']
 
+    def test_generate_initiators(self):
+        Common.config['auth'] = [ { "authentication": "identified" } ]
+        class mock_Auth(Auth):
+
+            def select_acls(self):
+                return([ "identified" ])
+            def select_discovery(self):
+                return([ "select_discovery" ])
+            def _find_tpg_identified_initiators(self):
+                return([ "iqn.abc" ])
+            def set_initiator_mode(self):
+                return([])
+
+        self.a = mock_Auth()
+
+        assert self.a.auth['acls'] == [{'initiator': 'iqn.abc'}]
+
     def test_generate_acls(self):
         Common.config['auth'] = [ { "authentication": "tpg+identified", 
                                     "tpg": { "userid": "common1", 
