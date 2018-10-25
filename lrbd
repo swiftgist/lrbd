@@ -1190,6 +1190,7 @@ class Images(object):
             custom = self.map_cmds[key]['custom']
             retry(cmd, **custom)
     
+
     def unmap(self):
         """
         Unmount all rbd images
@@ -2285,6 +2286,69 @@ class Acls(object):
             popen(cmd)
 
 
+class InitiatorSettings(object):
+    """
+    Allows the assignment of initiator attributes and parameters.
+    """
+
+    def assign(self):
+        """
+        Search entries for initiator settings.  Initiator settings must be in
+        a section named "identified" for authentication types identifed and
+        tpg+identified.  Initiator settings can be added to the "acls" section
+        for acls authentication.
+        """
+        once = True
+        if 'auth' in Common.config and Common.config['auth']:
+            for auth_entry in Common.config['auth']:
+                target = iqn(auth_entry)
+                for auth_type in ['identified', 'acls']:
+                    if auth_type in auth_entry and auth_type in auth_entry['authentication']:
+                        self._tidy(target, auth_entry[auth_type])
+                    if once:
+                        logging.warning("Be aware that default values were used during testing and understand the impact of changing any initiator settings.\n")
+                        once = False
+
+    def _tidy(self, target, entries):
+        """
+        Remove the unnecessary keys.  The username and password are specific to
+        the acls section.
+        """
+        for entry in entries:
+            initiator = entry['initiator']
+            ientry = entry.copy()
+            del ientry['initiator']
+            if 'userid' in ientry:
+                del ientry['userid']
+            if 'password' in ientry:
+                del ientry['password']
+            self._save(target, initiator, ientry)
+
+
+    def _save(self, target, initiator, settings):
+        """
+        Find each pathname.  Compare contents with desired value.  Overwrite
+        if necessary.
+        """
+        paths = Runtime.path("{}/tpgt_*/acls/{}".format(target, initiator))
+        for base in paths:
+            for setting in settings:
+                (subdir, name) = setting.split('_', 1)
+                path = "{}/{}/{}".format(base, subdir, name)
+                logging.debug("Initiator setting path {}".format(path))
+                if not os.path.isfile(path):
+                    raise RuntimeError("No such {} {}".format(subdir, name))
+                content = open(path).read().rstrip('\n')
+                if settings[setting] != content:
+                    logging.info("Setting {} {} to {}".format(subdir, name, settings[setting]))
+                    try:
+                        file_attr = open(path, "w")
+                        file_attr.write(settings[setting] + "\n")
+                        file_attr.close()
+                    except IOError:
+                        # Already in use
+                        pass
+
 class Auth(object):
     """
     Manage the authentications for each target.  Each authentication mode
@@ -2835,6 +2899,8 @@ def main(args):
             portals.create()
             acls = Acls()
             acls.create()
+            initiator_settings = InitiatorSettings()
+            initiator_settings.assign()
             maps = Map()
             maps.map()
             auth = Auth()
