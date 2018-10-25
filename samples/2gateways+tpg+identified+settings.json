@@ -1,0 +1,71 @@
+{
+  "auth": [
+    {
+        "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant",
+        "authentication": "tpg+identified",
+        "tpg": {
+            "userid": "common2",
+            "password": "pass1"
+        },
+        "identified": [
+          {
+            "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20",
+            "attrib_dataout_timeout": "3",
+            "attrib_dataout_timeout_retries": "5",
+            "attrib_default_erl": "0",
+            "attrib_nopin_response_timeout": "30",
+            "attrib_nopin_timeout": "15",
+            "attrib_random_datain_pdu_offsets": "0",
+            "attrib_random_datain_seq_offsets": "0",
+            "attrib_random_r2t_offsets": "0",
+            "param_DataPDUInOrder": "1",
+            "param_DataSequenceInOrder": "1",
+            "param_DefaultTime2Retain": "0",
+            "param_DefaultTime2Wait": "2",
+            "param_ErrorRecoveryLevel": "0",
+            "param_FirstBurstLength": "65536",
+            "param_ImmediateData": "1",
+            "param_InitialR2T": "1",
+            "param_MaxBurstLength": "262144",
+            "param_MaxConnections": "1",
+            "param_MaxOutstandingR2T": "1"
+          }
+        ]
+    }
+  ],
+  "targets": [
+    {
+      "hosts": [
+          { "host": "igw1", "portal": "portal1" },
+          { "host": "igw2", "portal": "portal2" }
+      ],
+      "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant"
+    }
+  ],
+  "portals": [
+      {
+          "name": "portal1",
+          "addresses": [ "172.16.1.16"]
+      },
+      {
+          "name": "portal2",
+          "addresses": [ "172.16.1.17" ]
+      }
+  ],
+  "pools": [
+    {
+      "pool": "rbd",
+      "gateways": [
+        {
+          "target": "iqn.2003-01.org.linux-iscsi:igw.x86:sn.redundant",
+          "tpg": [
+            {
+              "image": "city",
+              "initiator": "iqn.1996-04.de.suse:01:e6ca28cc9f20"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
