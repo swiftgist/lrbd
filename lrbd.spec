@@ -72,6 +72,7 @@ install -m 644 LICENSE %{buildroot}%{_docdir}/%{name}
 install -m 644 samples/acls+discovery.json  %{_samples}
 install -m 644 samples/acls+discovery+mutual.json  %{_samples}
 install -m 644 samples/acls.json  %{_samples}
+install -m 644 samples/acls+settings.json  %{_samples}
 install -m 644 samples/acls+mutual+discovery.json  %{_samples}
 install -m 644 samples/acls+mutual+discovery+mutual.json  %{_samples}
 install -m 644 samples/acls+mutual.json  %{_samples}
@@ -96,10 +97,13 @@ install -m 644 samples/3gateways+2portals+2images+isolated+no_authentication.jso
 install -m 644 samples/3gateways+no_authentication.json %{_samples}
 install -m 644 samples/plain+2gateways+2portals+2images+isolated+combined.json %{_samples}
 install -m 644 samples/2gateways+tpg+identified.json %{_samples}
+install -m 644 samples/2gateways+tpg+identified+settings.json %{_samples}
 install -m 644 samples/3gateways+tpg+identified.json %{_samples}
 install -m 644 samples/3gateways+80targets+no_authentication.json %{_samples}
 install -m 644 samples/tpg+identified+mutual+discovery+mutual.json %{_samples}
 install -m 644 samples/tpg+identified.json %{_samples}
+install -m 644 samples/identified.json %{_samples}
+install -m 644 samples/identified+settings.json %{_samples}
 install -m 644 samples/2gateways+2images+2targets+no_authentication.json %{_samples}
 install -m 644 samples/2gateways+2images+assigned_lun+no_authentication.json %{_samples}
 install -m 644 samples/plain+uuid.json %{_samples}
