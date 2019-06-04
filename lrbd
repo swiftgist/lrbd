@@ -182,6 +182,23 @@ def find_auth(key):
     logging.warning("{} not found in auth".format(key))
     return ""
 
+def is_suse():
+    """
+    Check whether this is a SUSE like distro and return true/false accordingly
+    """
+    if os.path.isfile("/etc/SuSE-release"):
+        return True
+    with open("/etc/os-release") as f:
+        for line in f:
+            k,v = line.rstrip().split("=")
+            if k == "ID" and v.strip('"') == "sles":
+                return True
+            if k == "ID_LIKE" and v.strip('"') == "suse":
+                return True
+            if k == "ID_LIKE" and v.strip('"') == "suse opensuse":
+                return True
+    return False
+
 class Common(object):
     """
     Sharing common static configurations.
@@ -191,7 +208,7 @@ class Common(object):
     config_name = ""
     ceph_conf = ""
     hostname = ""
-    pool_list = [] 
+    pool_list = []
     client_name = ""
 
     @staticmethod
@@ -1401,10 +1418,13 @@ class Iscsi(object):
         """
         Add branding
         """
+        if not is_suse():
+            # keep default "LIO-ORG" SCSI vendor ID
+            return
         for pentry, gentry, entry in entries():
             name = Runtime.backstore(pentry['pool'], entry)
             path = Runtime.core("{}_*/{}/wwn/vendor_id".format(Runtime.config['backstore'], name))
-            if path and os.path.isfile("/etc/SuSE-release"):
+            if path:
                 try:
                     vendor = open(path[0], "w")
                     vendor.write("SUSE\n")
