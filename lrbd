@@ -2398,11 +2398,17 @@ class Auth(object):
                                 self.cmds.extend(self.select_discovery())
         else:
             for target in Runtime.targets():
+                tpgs_seen = {}
                 self.target = target
+                # XXX despite auth being target IQN and TPG specific, we
+                # unfortunately need to iterate over images to lookup the
+                # TPG name, so do this but filter out duplicates.
                 for image in Runtime.images(target):
                     for portal in Runtime.portals(target, image):
                         self.tpg = str(Runtime.tpg(target, image, portal))
-                        self.cmds.append(self.set_noauth())
+                        if tpgs_seen.get(self.tpg) is None:
+                            self.cmds.append(self.set_noauth())
+                            tpgs_seen[self.tpg] = 1
             self.cmds.append(self.set_discovery_off())
 
     def select_auth(self):
