@@ -2395,7 +2395,7 @@ class Auth(object):
                                 self.tpg = str(Runtime.tpg(target, image, portal))
                                 self.auth = auth
                                 self.select_auth()
-                                self.cmds.extend(self.select_discovery())
+            self.cmds.extend(self.select_discovery())
         else:
             for target in Runtime.targets():
                 tpgs_seen = {}
