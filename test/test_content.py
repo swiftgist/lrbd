@@ -133,6 +133,16 @@ class ContentTestCase(unittest.TestCase):
         self.content._remove_absent_entry()
         assert self.content.attr.called
 
+    def test_write_host_exception(self):
+
+        pool = {"pool": "rbd"}
+        gateway = {"host": "igw1", "target": "iqn.xyz" }
+
+        try:
+            self.content._write_host(pool, gateway)
+        except ValueError, e:
+            assert re.match(r"gateway entry must contain either 'host' or 'target'", str(e))
+
 
 
     
