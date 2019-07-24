@@ -36,6 +36,37 @@ import time
 import shlex
 
 
+class TargetcliDispatcher:
+    """
+    Helper class to launch a targetcli process and feed it multiple commands via
+    queue_cmd().
+    When finished, flush_close() should be called to exit and print both stdout
+    and stderr. Raise an exception if the targetcli process retuns non-zero.
+    """
+    def __init__(self):
+        self.proc = Popen(["targetcli"], stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+    def queue_cmd(self, c):
+        if (c[0] != "targetcli"):
+            raise RuntimeError("not a targetcli cmd")
+        c.pop(0)
+        cmd_str = " ".join(c) + '\n'
+        sys.stdout.write('targetcli ' + cmd_str)
+        self.proc.stdin.write(cmd_str.encode('utf-8'))
+
+    def flush_close(self):
+        self.queue_cmd(["targetcli", "exit"])
+        self.proc.stdin.flush()
+        self.proc.wait()
+        for line in self.proc.stdout:
+            print(line.decode('utf-8').rstrip('\n'))
+        for line in self.proc.stderr:
+            print(line.decode('utf-8').rstrip('\n'))
+        if (self.proc.returncode != 0):
+            raise RuntimeError("command failed", self.proc.returncode)
+        if (logging.getLogger().level <= logging.INFO):
+            print
+
 def popen(cmd):
     """
     Execute a command, print both stdout and stderr, and raise exception 
