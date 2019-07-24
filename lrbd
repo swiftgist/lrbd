@@ -1311,8 +1311,10 @@ class Backstores(object):
         """
         Execute saved commands
         """
+        td = TargetcliDispatcher()
         for cmd in uniq(self.cmds):
-            popen(cmd)
+            td.queue_cmd(cmd)
+        td.flush_close()
         self._enable_rbd()
 
     def _enable_rbd(self):
@@ -1469,8 +1471,10 @@ class Iscsi(object):
         """
         Execute commands and assign list of targets to Common.config['iqns']
         """
+        td = TargetcliDispatcher()
         for cmd in self.cmds:
-            popen(cmd)
+            td.queue_cmd(cmd)
+        td.flush_close()
         if self.iqns:
             Common.config['iqns'] = self.iqns
         else:
@@ -1748,9 +1752,11 @@ class TPGs(object):
         """
         Execute commands and assign list of targets to Common.config['iqns']
         """
+        td = TargetcliDispatcher()
         for cmd in self.cmds:
             if cmd:
-                popen(cmd)
+                td.queue_cmd(cmd)
+        td.flush_close()
 
 class TPGCounter(object):
     """
@@ -2020,9 +2026,10 @@ class Portals(object):
         Execute saved commands.  Skip redundant commands from multiple image
         entries.
         """
-        #for cmd in uniq(self.cmds):
+        td = TargetcliDispatcher()
         for cmd in uniq(self.cmds):
-            popen(cmd)
+            td.queue_cmd(cmd)
+        td.flush_close()
 
 class Luns(object):
     """
@@ -2113,10 +2120,12 @@ class Luns(object):
         Disable auto mapping.  Execute saved commands.
         """
         self.disable_auto_add_mapped_luns()
+        td = TargetcliDispatcher()
         for cmd in uniq(self.assigned):
-            popen(cmd)
+            td.queue_cmd(cmd)
         for cmd in uniq(self.unassigned):
-            popen(cmd)
+            td.queue_cmd(cmd)
+        td.flush_close()
 
     def disable_auto_add_mapped_luns(self):
         """
@@ -2236,8 +2245,10 @@ class Map(object):
         """
         Execute saved commands.
         """
+        td = TargetcliDispatcher()
         for cmd in self.cmds:
-            popen(cmd)
+            td.queue_cmd(cmd)
+        td.flush_close()
 
 
 class Acls(object):
@@ -2333,8 +2344,10 @@ class Acls(object):
         """
         Execute unique, saved commands
         """
+        td = TargetcliDispatcher()
         for cmd in uniq(self.cmds):
-            popen(cmd)
+            td.queue_cmd(cmd)
+        td.flush_close()
 
 
 class InitiatorSettings(object):
@@ -2840,9 +2853,11 @@ class Auth(object):
         """
         Execute all the authentication commands
         """
+        td = TargetcliDispatcher()
         for cmd in self.cmds:
             if cmd:
-                popen(cmd)
+                td.queue_cmd(cmd)
+        td.flush_close()
 
 
 def disable_check():
