@@ -80,9 +80,10 @@ class LunsTestCase(unittest.TestCase):
 
 
 
-    @mock.patch('lrbd.popen')
+    @mock.patch('lrbd.Popen')
     def test_create_nothing(self, mock_subproc_popen):
 
+        mock_subproc_popen.return_value.returncode = 0
         class mock_Luns(Luns):
 
             def _find(self):
@@ -95,14 +96,15 @@ class LunsTestCase(unittest.TestCase):
                 pass
 
         self.l = mock_Luns(None)
-        mock_subproc_popen.return_value = []
+        self.l.cmds = [[ "targetcli", "hello" ]]
         self.l.create()
 
-        assert not mock_subproc_popen.called
+        assert mock_subproc_popen.called
 
-    @mock.patch('lrbd.popen')
+    @mock.patch('lrbd.Popen')
     def test_create(self, mock_subproc_popen):
 
+        mock_subproc_popen.return_value.returncode = 0
         class mock_Luns(Luns):
 
             def _find(self):
@@ -120,7 +122,7 @@ class LunsTestCase(unittest.TestCase):
 
         _la = mock_LunAssignment()
         self.l = mock_Luns(_la)
-        mock_subproc_popen.return_value = []
+        self.l.cmds = [[ "targetcli", "hello" ]]
         self.l.create()
 
         assert mock_subproc_popen.called

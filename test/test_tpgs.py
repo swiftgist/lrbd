@@ -153,29 +153,6 @@ class TPGsTestCase(unittest.TestCase):
         self.t = mock_TPGs(None, _pi, None)
         self.t._check_portal("portal2")
 
-    #@mock.patch('lrbd.TPGs._disable_tpg')
-    #def test_remote(self, mock_disable_tpg):
-    #    Common.config['portals'] = [ { "name": "portal1", 
-    #                                   "addresses": [ "172.16.1.16" ] } ]
-    #    class mock_TPGs(TPGs):
-
-    #        def _add(self):
-    #            pass
-
-    #    class Portal_Index(object):
-    #        def portals(self):
-    #            pass
-
-    #    _pi = Portal_Index()
-    #    self.t = mock_TPGs(None, _pi, None)
-    #    self.t.portals["iqn.xyz"] = {}
-    #    self.t.portals["iqn.xyz"]["archive"] = {}
-    #    self.t.portals["iqn.xyz"]["archive"]["portal1"] = 1
-    #    self.t.tpg["iqn.xyz"] = 2
-    #    Runtime.config['addresses'] = [ "172.16.1.17" ]
-    #    self.t.disable_remote()
-    #    assert mock_disable_tpg.called
-
     @mock.patch('glob.glob')
     def test_cmd(self, mock_subproc_glob):
         class mock_TPGs(TPGs):
@@ -222,8 +199,11 @@ class TPGsTestCase(unittest.TestCase):
         result = self.t._cmd("iqn.xyz", "2")
         assert result == []
 
-    @mock.patch('lrbd.popen')
-    def test_create(self, mock_subproc_popen):
+    @mock.patch('lrbd.Popen')
+    def test_create(self, mock_popen):
+
+        mock_popen.return_value.returncode = 0
+
         class mock_TPGs(TPGs):
 
             def _add(self):
@@ -239,11 +219,20 @@ class TPGsTestCase(unittest.TestCase):
             def portals(self):
                 pass
 
+        class TargetcliDispatcher:
+
+             def queue_cmd(self, cmd):
+                 pass
+
+             def flush_close(self):
+                 pass
+
         _pi = Portal_Index()
         self.t = mock_TPGs(None, _pi, None)
-        self.t.cmds = [ [ "echo", "hello" ] ]
+        self.t.cmds = [ [ "targetcli", "hello" ] ]
         self.t.create()
-        assert mock_subproc_popen.called
+
+        assert mock_popen.called
 
 
 

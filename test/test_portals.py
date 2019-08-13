@@ -105,17 +105,17 @@ class PortalsTestCase(unittest.TestCase):
         self.pt = Portals()
         assert self.pt.cmds == []
 
-    @mock.patch('lrbd.popen')
+    @mock.patch('lrbd.Popen')
     def test_create(self, mock_subproc_popen):
+        mock_subproc_popen.return_value.returncode = 0
         Runtime.config['addresses'] = [ "172.16.1.17" ]
         Runtime.config['portals'] = {}
         Runtime.config['portals']["iqn.xyz"] = {}
         Runtime.config['portals']["iqn.xyz"]["archive"] = {}
         Runtime.config['portals']["iqn.xyz"]["archive"]["portal1"] = "1"
 
-        mock_subproc_popen.return_value = []
-
         self.pt = Portals()
+        self.pt.cmds = [[ "targetcli", "hello" ]]
         self.pt.create()
         assert mock_subproc_popen.called
 
