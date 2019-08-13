@@ -32,9 +32,11 @@ class IscsiTestCase(unittest.TestCase):
         self.i = mock_Iscsi()
         assert self.i.cmds == [['targetcli', '/iscsi', 'create', 'iqn.xyz' ]]
 
-    @mock.patch('lrbd.popen')
+    @mock.patch('lrbd.Popen')
     @mock.patch('glob.glob')
-    def test_create_default(self, mock_subproc_popen, mock_subproc_glob):
+    def test_create_default(self, mock_subproc_glob, mock_subproc_popen):
+        mock_subproc_popen.return_value.returncode = 0
+
         Common.config = { "targets": [ { "host": "igw1", 
                                          "target": "iqn.xyz" } ] }
         mock_subproc_glob.return_value = [ "/some/path/name" ]
@@ -46,12 +48,14 @@ class IscsiTestCase(unittest.TestCase):
             def disable_auto_add_default_portal(self):
                 pass
         self.i = mock_Iscsi()
+        #self.i.cmds = [[ "targetcli", "hello" ]]
         self.i.create()
         assert (mock_subproc_popen.called and 
                 Common.config['iqns'] == [ "iqn.xyz" ])
 
-    @mock.patch('lrbd.popen')
+    @mock.patch('lrbd.Popen')
     def test_create(self, mock_subproc_popen):
+        mock_subproc_popen.return_value.returncode = 0
         Common.config = { "targets": [ { "host": "igw1", 
                                          "target": "iqn.xyz" } ] }
         class mock_Iscsi(Iscsi):
@@ -62,6 +66,7 @@ class IscsiTestCase(unittest.TestCase):
             def disable_auto_add_default_portal(self):
                 pass
         self.i = mock_Iscsi()
+        self.i.cmds = [[ "targetcli", "hello" ]]
         self.i.create()
         assert mock_subproc_popen.called
 

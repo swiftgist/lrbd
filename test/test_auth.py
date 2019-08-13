@@ -371,8 +371,10 @@ class AuthTestCase(unittest.TestCase):
         self.a = mock_Auth()
         assert self.a.cmds == ['acls mutual', 'acls mode', 'discovery off']
 
-    @mock.patch('lrbd.popen')
+    @mock.patch('lrbd.Popen')
     def test_create(self, mock_subproc_popen):
+        mock_subproc_popen.return_value.returncode = 0
+
         del Common.config['auth']
         class mock_Auth(Auth):
 
@@ -383,6 +385,7 @@ class AuthTestCase(unittest.TestCase):
                 return("discovery off")
 
         self.a = mock_Auth()
+        self.a.cmds = [[ "targetcli", "hello" ]]
         self.a.create()
         assert mock_subproc_popen.called
 

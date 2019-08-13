@@ -126,9 +126,10 @@ class MapTestCase(unittest.TestCase):
         self.m = mock_Map()
         assert not self.m.cmds
 
-    @mock.patch('lrbd.popen')
-    def test_map(self, mock_subproc_glob):
+    @mock.patch('lrbd.Popen')
+    def test_map(self, mock_subproc_popen):
 
+        mock_subproc_popen.return_value.returncode = 0
         class mock_Map(Map):
 
             def _lun(self, target, tpg, image):
@@ -141,13 +142,14 @@ class MapTestCase(unittest.TestCase):
                 self.called = " ".join([ target, str(tpg), initiator, lun ])
 
         self.m = mock_Map()
-        self.m.cmds = [ [ "echo", "hello" ] ]
+        self.m.cmds = [ [ "targetcli", "hello" ] ]
         self.m.map()
-        assert mock_subproc_glob.called
+        assert mock_subproc_popen.called
 
-    @mock.patch('lrbd.popen')
-    def test_map_does_nothing(self, mock_subproc_glob):
+    @mock.patch('lrbd.Popen')
+    def test_map_does_nothing(self, mock_subproc_popen):
 
+        mock_subproc_popen.return_value.returncode = 0
         class mock_Map(Map):
 
             def _lun(self, target, tpg, image):
@@ -161,4 +163,4 @@ class MapTestCase(unittest.TestCase):
 
         self.m = mock_Map()
         self.m.map()
-        assert not mock_subproc_glob.called
+        assert mock_subproc_popen.called

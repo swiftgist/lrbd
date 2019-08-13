@@ -92,8 +92,10 @@ class AclsTestCase(unittest.TestCase):
         print self.a.cmds
         assert self.a.cmds == [['targetcli', '/iscsi/iqn.xyz/tpg1/acls', 'create', 'iqn.abc']]
 
-    @mock.patch('lrbd.popen')
+    @mock.patch('lrbd.Popen')
     def test_create(self, mock_subproc_popen):
+
+        mock_subproc_popen.return_value.returncode = 0
 
         Common.config['iqns'] = [ "iqn.xyz" ]
         Common.config['portals'] = [ { "name": "portal1",
@@ -127,6 +129,6 @@ class AclsTestCase(unittest.TestCase):
                 self.called = " ".join([ target, str(tpg), initiator ])
 
         self.a = mock_Acls()
-        self.a.cmds = [[ "echo", "hello" ]]
+        self.a.cmds = [[ "targetcli", "hello" ]]
         self.a.create()
         assert mock_subproc_popen.called

@@ -193,8 +193,9 @@ class BackstoresTestCase(unittest.TestCase):
         assert not self.b.cmds
 
 
-    @mock.patch('lrbd.popen')
+    @mock.patch('lrbd.Popen')
     def test_create(self, mock_subproc_popen):
+        mock_subproc_popen.return_value.returncode = 0
         Common.config = { 
             "pools": [ 
                 { "pool": "rbd", 
@@ -206,6 +207,7 @@ class BackstoresTestCase(unittest.TestCase):
                 } ] }
 
         self.b = Backstores("iblock")
+        self.b.cmds = [[ "targetcli", "hello" ]]
         self.b.create()
         assert mock_subproc_popen.called
 
