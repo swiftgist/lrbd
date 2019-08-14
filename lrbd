@@ -621,6 +621,8 @@ class Content(object):
         """
         Write a host entry
         """
+        if 'host' in gateway and 'target' in gateway:
+            raise ValueError("gateway entry must contain either 'host' or 'target'")
         if 'host' in gateway:
             self.attr.write(str(pool['pool']),
                             str(gateway['host']), json.dumps(gateway))
