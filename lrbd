@@ -405,7 +405,8 @@ class Content(object):
                                                        '/usr/bin/vim')
         self.initial_content = InitialContents()
 
-        with tempfile.NamedTemporaryFile(suffix=".tmp", mode='w') as tmpfile:
+        # .json suffix means we should get editor syntax highlighting
+        with tempfile.NamedTemporaryFile(suffix=".json", mode='w') as tmpfile:
             tmpfile.write(self.initial_content.text)
             tmpfile.flush()
 
