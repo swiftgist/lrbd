@@ -1626,7 +1626,12 @@ class TPGs(object):
         Append command with current counter
         """
         self.portal_index.tpg(self.tpg_counter.value())
-        self.cmds.append(self._cmd(target, self.tpg_counter.value()))
+        cmd = self._cmd(target, self.tpg_counter.value())
+        if len(cmd) == 0 or cmd in self.cmds:
+            logging.debug("filtering empty or duplicate cmd {} from {}".
+                          format(cmd, self.cmds))
+            return
+        self.cmds.append(cmd)
         logging.debug("Adding TPG {} for target {}".
                       format(self.tpg_counter.value(), target))
 
@@ -1742,7 +1747,8 @@ class TPGs(object):
 
     def _cmd(self, target, tpg):
         """
-        Return targetcli command if configfs entry is not present
+        Return targetcli command if configfs entry is not present. The configfs
+        check doesn't filter duplicates, as execution occurs later.
         """
         path = Runtime.path("{}/tpgt_{}".format(target, tpg))
         if not path:
